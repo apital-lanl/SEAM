@@ -26,7 +26,7 @@ from PIL.TiffTags import TAGS
   #WARNING: risks decompression bomb susceptibility; only use if you're processing images you trust
 Image.MAX_IMAGE_PIXELS = None
 from scipy.interpolate import griddata
-import seaborn as sns
+# import seaborn as sns
 from skimage.feature import blob_dog, blob_log, blob_doh
 from skimage.measure import label, regionprops_table
 from sklearn.linear_model import LinearRegression

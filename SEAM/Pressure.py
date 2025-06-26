@@ -134,7 +134,7 @@ class Parapress:
         root.destroy()
         
         #Wrap up files into a dictionary split out by channel
-        filenames = select_files_bydate(filenames, start_date= start_date, end_date= end_date)
+        filenames = Parapress.select_files_bydate(filenames, start_date= start_date, end_date= end_date)
         filenames_dict = Parapress.dict_from_filenames(filenames, channels = channels)
         
         return filenames_dict
@@ -148,7 +148,6 @@ class Parapress:
         Date/time format = 'YEAR-MONTH-DAY-HRMINSEC'
         channel data format = 19-08212024-160139  (CH-MMDDYYY-HHMMSS)
         '''
-        
         
         #Open dialogbox to select file directory
         root = Tk()
@@ -164,7 +163,7 @@ class Parapress:
                     filename = filename.replace('.xlsx', '')
                     filename_split = filename.split('-')
                     date_check = len(filename_split[1])== 8
-                    timecheck = len(filename_split[2])== 6
+                    time_check = len(filename_split[2])== 6
                     
                     if date_check and time_check:
                         filenames.append(os.path.join(dirpath, filename))
@@ -173,21 +172,22 @@ class Parapress:
                     filename = filename.replace('.csv', '')
                     filename_split = filename.split('-')
                     date_check = len(filename_split[1])== 8
-                    timecheck = len(filename_split[2])== 6
+                    time_check = len(filename_split[2])== 6
                     
                     if date_check and time_check:
                         filenames.append(os.path.join(dirpath, filename))
                         
         #Wrap up files into a dictionary split out by channel
-        filenames = select_files_bydate(filenames, start_date= start_date, end_date= end_date)
+        filenames = Parapress.select_files_bydate(filenames, start_date= start_date, end_date= end_date)
         filenames_dict = Parapress.dict_from_filenames(filenames, channels = channels)
         
         return filenames_dict
 
     
-@staticmethod
-    def filenames_to_dataframe(filenames_dict, plot_block = True, datetime_coerce = 'latest'):
-        ''' v1.0   created:2024-11-06   modified:2024-11-06
+    @staticmethod
+    def filenames_to_dataframe(filenames_dict, plot_block = True, datetime_coerce = 'latest',
+                               main_directory = ''):
+        ''' v2.0   created:2024-11-06   modified:2025-06-16
         Adapted from previous Jupyter Notebook code.
         datetime_coerce = 'latest', 'earliest'
         '''
@@ -195,6 +195,7 @@ class Parapress:
         # List out the actual filenames for each date's file
         df_list = []
         #    Make a single list of lists of every file in the directory
+        
         walk_name_part = os.walk(main_directory)   
         for ch_index, ch_dir in tqdm(enumerate(channel_dirs)):
             print('__________________________________________________________________________________________________')
@@ -398,9 +399,10 @@ class Parapress:
         
     @staticmethod
     def dict_from_filenames(filenames, channels=[]):
-        ''' v1.0   created:2024-11-06   modified:2024-11-06
+        ''' v1.1   created:2024-11-06   modified:2025-06-16
         Sort ParaPress outout filenames by date and return sorted list.
-        Option for only selecting some channels
+        Option for only selecting some channels.
+        Output
         '''
         
         blank_channel_entry = {
@@ -431,6 +433,9 @@ class Parapress:
                     clean_filename = clean_filename + '_' + part
             else:
                 clean_filename = end_split_filename
+                
+            if type(clean_filename)== list:
+                clean_filename = clean_filename[0]
             
             try:
                 split_list = clean_filename.split('-')
@@ -461,7 +466,7 @@ class Parapress:
             filenames_dict[channel]['filenames'] = filenames_list
             filenames_dict[channel]['display_names'] = display_names
         
-        return filenames
+        return filenames_dict
         
         
     @staticmethod
@@ -548,6 +553,10 @@ class Parapress:
                     clean_filename = clean_filename + '_' + part
             else:
                 clean_filename = end_split_filename
+                
+            #Fix filetype issue and flattern list to string
+            if type(clean_filename) == list:
+                clean_filename = clean_filename[0]
             
             #
             try:
