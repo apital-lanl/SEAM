@@ -862,7 +862,7 @@ class Keyence:
 
 class SEM:
 
-    ''' v1.0.0   created:2024-08-06   modified:2024-11-11
+    ''' v1.0.0   created:2024-08-06   modified:2025-07-01
     Wrapper class for stitching SEM images from Quanta 200 and JEOL instruments.
     NOT a generic SEM class; very niche and kind of garbage. Needs a lot of work.
     
@@ -871,8 +871,8 @@ class SEM:
         -
     '''
     
-    version = '1.0.0'
-    version_mod_date = '2024-11-11'
+    version = '1.1.0'
+    version_mod_date = '2025-07-01'
     
     homography_match_threshholds = [0.2, 0.4, 0.5, 0.6, 0.8]
     minimum_homography_matches = 5
@@ -880,7 +880,7 @@ class SEM:
     @staticmethod
     def sort_filenames(these_filenames):
     
-        ''' v1.1  modified 2024-01-09
+        ''' v1.2  modified 2025-07-01
         INPUT:  list of filenames
         ACTION: sort filenames by index unless they have a '_X000_Y000' component (JEOL standard for montage),
                 in which case sort them by those X-Y indices.
@@ -893,10 +893,13 @@ class SEM:
         sorted_filenames = []
         possible_sorted_names = []
         original_basenames = [os.path.basename(filename) for filename in these_filenames]
+        
+        test_filename = these_filenames[0]
+        under_split_test_filename = test_filename.replace('.tif','').split('_')
     
         # Flag for JEOL naming of montage images
         # NOTE: this whole section will fail if there are >99 rows or columns in the montage
-        if '_X0' in these_filenames[0] and '_Y0' in these_filenames[0]:
+        if '_X0' in test_filename and '_Y0' in test_filename:
             # Run through list once to get maximum 'X' and 'Y' in the list
             max_x = 0
             max_y = 0
@@ -933,6 +936,11 @@ class SEM:
                 for original_basename in original_basenames:
                     if basename in original_basename:
                         sorted_filenames.append(os.path.join(base_path, original_basename))
+                        
+        #For Quanta 200 and generic formats where last part of filename is an imaging index
+        elif under_split_test_filename[-1].isnumeric():
+            #TODO: do the actual sorting, but it honestly doesn't matter
+            sorted_filenames = these_filenames
         
         return sorted_filenames
     

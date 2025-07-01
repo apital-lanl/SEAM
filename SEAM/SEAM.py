@@ -320,15 +320,16 @@ class SEAM:
             with open(dump_filepath, 'w') as file:
                 json.dump(dump_dict, file, indent=4)
         except FileNotFoundError:
-            #Find config file if main root doesn't exist
-            import seam_config
-            dump_dir = os.path.join(seam_config.working_directory, 'logs')
-            trial_filepath = os.path.join(dump_dir, 'MaunualInterimProcessFile')
-            trial_filepath = trial_filepath+".json"
-            dump_filepath = Utilities.checkfile(trial_filepath)
+            #TODO: Fix this to dump to a root temp directory; no idea what 'seam_config' was supposed to be
+            # #Find config file if main root doesn't exist
+            # import seam_config
+            # dump_dir = os.path.join(seam_config.working_directory, 'logs')
+            # trial_filepath = os.path.join(dump_dir, 'MaunualInterimProcessFile')
+            # trial_filepath = trial_filepath+".json"
+            # dump_filepath = Utilities.checkfile(trial_filepath)
             
-            with open(dump_filepath, 'w') as file:
-                json.dump(dump_dict, file, indent=4)
+            # with open(dump_filepath, 'w') as file:
+            #     json.dump(dump_dict, file, indent=4)
         
 
     def func_temp():

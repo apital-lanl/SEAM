@@ -16,7 +16,7 @@ global GFA
 # 'False'- try and alighn images by homography; get image features and try to align them
 
 dumb_stitch = True
-other_save_location = 'GUI'   # 'GUI' '' or filepath
+other_save_location = r'F:\New SEM Montages'   # 'GUI' '' or filepath
 if other_save_location == 'GUI':
     root = Tk()
     other_save_location = filedialog.askdirectory(title="Select an additional location to save stitch copies to.")
@@ -27,7 +27,6 @@ else:
 ######################################################################
 ##   SEM .tif image stitching      ###################################
 ######################################################################
-
 
 # # # Select the files to stitch
 # # # NOTE: you'll need to click the console panel (prob bottom right of this window) to type Y/N
@@ -125,7 +124,7 @@ for index, file_list in enumerate(filename_lists[0::]):
                 'files':file_list
                 }
             
-            SEAM.interim_process_dump(interim_prcs_dict)
+            SEAM.SEAM.interim_process_dump(interim_prcs_dict)
             
         except Exception as exc:
             print(f"Failed on {algorithm} algorithm")
@@ -139,8 +138,8 @@ for index, file_list in enumerate(filename_lists[0::]):
                 'input_dict': arg_dict,
                 'files':file_list
                 }
-            
-            SEAM.interim_process_dump(interim_prcs_dict)
+
+            SEAM.SEAM.interim_process_dump(interim_prcs_dict)
             
             basename_list = os.path.basename(file_list[0]).split('_')[0:-2]
             trial_types = []
