@@ -25,7 +25,7 @@ else:
     pass   #just pass 'other_save_location' 
 
 ######################################################################
-##   SEM .tif image stitching      ###################################
+##   SEM .tif image stitching      ###################################n
 ######################################################################
 
 # # # Select the files to stitch
@@ -124,7 +124,7 @@ for index, file_list in enumerate(filename_lists[0::]):
                 'files':file_list
                 }
             
-            SEAM.SEAM.interim_process_dump(interim_prcs_dict)
+            # SEAM.SEAM.interim_process_dump(interim_prcs_dict)
             
         except Exception as exc:
             print(f"Failed on {algorithm} algorithm")
@@ -139,7 +139,7 @@ for index, file_list in enumerate(filename_lists[0::]):
                 'files':file_list
                 }
 
-            SEAM.SEAM.interim_process_dump(interim_prcs_dict)
+            # SEAM.SEAM.interim_process_dump(interim_prcs_dict)
             
             basename_list = os.path.basename(file_list[0]).split('_')[0:-2]
             trial_types = []

@@ -1001,7 +1001,10 @@ class SEM:
 
             
         # Reshape the imported image data 
-        np_img = np.array(img.getdata())
+        try:
+            np_img = np.array(img.getdata())
+        except:
+            np_img = np.array(img)
         w, h = img.size
         np_img.shape = (h, w, np_img.size // (w * h))
         np_img = np_img[offset:(img_height-databar_offset-offset), offset:(img_width-offset)]
@@ -1009,8 +1012,10 @@ class SEM:
     
         xdim = clean_img.shape[0]
         ydim = clean_img.shape[1]
-        pil_image = PIL.Image.fromarray(clean_img.astype('uint8'))
-        #pil_image = PIL.Image.fromarray(clean_img[offset:xdim-offset, offset:ydim-offset, 0].astype('uint8'))
+        try:
+            pil_image = PIL.Image.fromarray(clean_img.astype('uint8'))
+        except:
+            pil_image = PIL.Image.fromarray(clean_img[offset:xdim-offset, offset:ydim-offset, 0].astype('uint8'))
         
         return clean_img
 

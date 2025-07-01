@@ -319,7 +319,9 @@ class SEAM:
         try:
             with open(dump_filepath, 'w') as file:
                 json.dump(dump_dict, file, indent=4)
+        
         except FileNotFoundError:
+            
             #TODO: Fix this to dump to a root temp directory; no idea what 'seam_config' was supposed to be
             # #Find config file if main root doesn't exist
             # import seam_config
@@ -330,6 +332,8 @@ class SEAM:
             
             # with open(dump_filepath, 'w') as file:
             #     json.dump(dump_dict, file, indent=4)
+            
+            pass
         
 
     def func_temp():
