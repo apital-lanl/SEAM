@@ -5,13 +5,10 @@ Created on Apr 12 2024
 @author: Aaron Pital
 """
 
-##################################################################################################
-###    Type Hash     #############################################################################
-##################################################################################################
 
 import os
 
-class TypeHash:
+class Fingerprint:
     
     ''' v0.0.2   created:2024-04-19  modified:2024-08-05
 
@@ -181,7 +178,7 @@ class TypeHash:
         for part in split_list:
             part = '.'+part
             try:
-                ext = TypeHash.filetype_flags[part]
+                ext = Fingerprint.filetype_flags[part]
                 extension_list.append(part)
             except:
                 pass
@@ -190,13 +187,13 @@ class TypeHash:
             file_summary.update ( {'filetype':extension_list[0]})
             #Try to lookup filetype info; if you can't find it, assign to UNK
             try:
-                ext_dict = TypeHash.filetype_flags[extension_list[0]]
+                ext_dict = Fingerprint.filetype_flags[extension_list[0]]
                 file_summary.update ( {'filetype flag':ext_dict['flag_name']})
                 file_summary.update ( {'flag id':ext_dict['flag_id']})
                 file_summary.update ( {'recipe supp id':ext_dict['recipe_supp_id']})
             except:
                 file_summary.update ( {'filetype':'.unk'})
-                ext_dict = TypeHash.filetype_flags['.unk']
+                ext_dict = Fingerprint.filetype_flags['.unk']
                 file_summary.update ( {'filetype flag':ext_dict['flag_name']})
                 file_summary.update ( {'flag id':ext_dict['flag_id']})
                 file_summary.update ( {'recipe supp id':ext_dict['recipe_supp_id']})
@@ -211,10 +208,10 @@ class TypeHash:
                 if idx==-1:
                     file_summary.update ( {'filetype':extension_list[idx]})
                     try:
-                        ext_dict = TypeHash.filetype_flags[extension_list[idx]]
+                        ext_dict = Fingerprint.filetype_flags[extension_list[idx]]
 
                     except:
-                        ext_dict = TypeHash.filetype_flags['.unk']
+                        ext_dict = Fingerprint.filetype_flags['.unk']
                     file_summary.update ( {'filetype flag':ext_dict['flag_name']})
                     file_summary.update ( {'flag id':ext_dict['flag_id']})
                     file_summary.update ( {'recipe supp id':ext_dict['recipe_supp_id']})
@@ -222,9 +219,9 @@ class TypeHash:
                     new_dict = {}
                     new_dict.update ( {'filetype':extension_list[idx]})
                     try:
-                        ext_dict = TypeHash.filetype_flags[extension_list[idx]]
+                        ext_dict = Fingerprint.filetype_flags[extension_list[idx]]
                     except:
-                        ext_dict = TypeHash.filetype_flags['.unk']
+                        ext_dict = Fingerprint.filetype_flags['.unk']
                     new_dict.update ( {'filetype flag':ext_dict['flag_name']})
                     new_dict.update ( {'flag id':ext_dict['flag_id']})
                     new_dict.update ( {'recipe supp id':ext_dict['recipe_supp_id']})
@@ -232,7 +229,7 @@ class TypeHash:
         
         elif len(extension_list)==0:
             file_summary.update ( {'filetype':'.unk'})
-            ext_dict = TypeHash.filetype_flags['.unk']
+            ext_dict = Fingerprint.filetype_flags['.unk']
             file_summary.update ( {'filetype flag':ext_dict['flag_name']})
             file_summary.update ( {'flag id':ext_dict['flag_id']})
             file_summary.update ( {'recipe supp id':ext_dict['recipe_supp_id']})

@@ -1,11 +1,15 @@
 # -*- coding: utf-8 -*-
 """
-Created on Apr 12 2024
-
+Created:  2024-04-12
+Modified  2025-07-18
 @author: Aaron Pital
 
-Description: Renamed from 'SH2D' to 'SpatialArray' 2024-09-13
+Description: 
+
+Changelog:
+    - [2024-09-13] Renamed from 'SH2D' to 'SpatialArray' 
 """
+
 import numpy
 import pandas
 

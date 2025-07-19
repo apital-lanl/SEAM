@@ -1,8 +1,11 @@
 # -*- coding: utf-8 -*-
 """
-Created:   2024-04-03
+Created:  2024-04-03
+Modified: 2025-07-19
 
 @author: Aaron Pital (Los Alamos National Lab)
+
+Description: Set of classes for handling SEM, laser profilometry
 """
 date_modified = '2025-05-28'
 version = '1.4.4 (unmerged beta)'
@@ -27,7 +30,7 @@ from PIL.TiffTags import TAGS
 Image.MAX_IMAGE_PIXELS = None
 from scipy.interpolate import griddata
 # import seaborn as sns
-from skimage.feature import blob_dog, blob_log, blob_doh
+#from skimage.feature import blob_dog, blob_log, blob_doh
 from skimage.measure import label, regionprops_table
 from sklearn.linear_model import LinearRegression
 from tqdm.auto import tqdm
@@ -3864,7 +3867,7 @@ class Utilities:
                           calculation_type = 'outside_CLT',
                           fix_bins = False):
         
-        ''' v1.1.4    created:2025-04-08    modified:2025-05-06
+        ''' v1.1.4    created:2025-04-08    modified:2025-07-19
         
         Description: General-purpose function for taking a bin::cnts histogram, assuming central limit theorem, and 
             and returning associated values. If thresholding and calculation values are set, do those and return.
@@ -3908,6 +3911,8 @@ class Utilities:
         if name != '':
             if os.path.isfile(name):
                 name = os.path.basename(name)
+        else:
+            name = "GenericName"
         
         #ASSUME CLT and get FWHM
         max_idx = np.where(cnts== cnt_max)[0] +1
@@ -4055,7 +4060,8 @@ class Utilities:
         
         ''' v1.0.1  created:2025-04-15  modified:2025-05-28
         Description:
-            Uses a sliding window
+            Uses a sliding window and reference data to build a probability map of local
+              pixel intensities in an SEM montage.
             
         Inputs:
             'img_array'-            numpy array or array-like object (i.e. PIL.Image) that can be converted to a numpy array
@@ -4072,6 +4078,8 @@ class Utilities:
             'window_step_number'-   decrement from 'max' to 'min' window size run on each kernel 
         '''
 
+        name = thresh_dict['name']
+        
         #Condition window size 
         if (window_min != window_max):
             #if window max and min are specified but number of steps isn't, take a guess
@@ -4138,7 +4146,6 @@ class Utilities:
                         threshold = lower_guassian_pixel_threshold
                         weights[image_bins[1::]>threshold] = 0
                 
-
         #Modify arrays and preprocess
         print(f"\t Applying pixel transform: ({pixel_value_transform})")
         print()
@@ -4273,7 +4280,7 @@ class Utilities:
         plt.colorbar()
         plt.show()
         
-        return thresh_dict, binary_image
+        return thresh_dict, blob_array
     
     
     #Average pixel probabilities from a training set (n=13) of blisters

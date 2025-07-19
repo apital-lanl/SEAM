@@ -24,10 +24,9 @@ from Meta import Meta
    #    SEAM variables   ##########################################################################
    
    
-   
 class SEAM:
     
-    ''' v0.0.4   created:2024-04-12   modified:2024-09-10
+    ''' v0.1.0   created:2024-04-12   modified:2025-07-19
     
     Open a SEAM meta object. If no directory is supplied, assume reliance on prior data.
     If a directory is supplied and data has never been processed previously, start new 'logging' files and 
@@ -36,12 +35,18 @@ class SEAM:
     '''
     
     version = '0.0.4'
-    date_modified = '2024-09-10'
+    date_modified = '2025-07-19'
+
+    global seam_root, current_seam_oject
+
+    template_config_dict = {
+        'user_root': '',
+        'seam_root': [],
+
+        }
 
     
     def __init__(self, work_dir='', alt_root=''):
-        
-        global seam_root, current_seam_oject
 
         #initialize some object instance fields
         self.log = {
@@ -144,6 +149,9 @@ class SEAM:
         os.makedirs(os.path.join(self.recipes_root_directory, "Perspectives", "Projects"), exist_ok = ok_exist_mode)
         os.makedirs(os.path.join(self.recipes_root_directory, "Perspectives", "Timelines"), exist_ok = ok_exist_mode)
         
+        self.instances_root_directory = os.path.join(root_dir, "Instances")
+        os.makedirs(self.instances_root_directory, exist_ok = ok_exist_mode)
+
         self.typehash_root_directory = os.path.join(root_dir, "TypeHashes")
         os.makedirs(self.typehash_root_directory, exist_ok = ok_exist_mode)
 
@@ -260,11 +268,20 @@ class SEAM:
         '''
         pass
     
+    @staticmethod
+    def seam_config(directory = None):
+        ''' v0.1.0   created:2025-07-19   modified:2025-07-19
+        Description: Return a dictionary with collected SEAM root information. If no root is found, create one 
+            and populate a temporary instance
+        '''
+
+
+        pass
     
     @staticmethod
-    def find_seami_files(directory):
-        ''' v0.1.0   created:2024-08-22   modified:2024-08-22
-        Description        
+    def find_instances(directory):
+        ''' v0.1.0   created:2024-08-22   modified:2025-07-19
+        Description: Search for stored SEAM instances (.seami) files        
         '''
         trial_files = []
         for root, dirs, files in os.walk(directory, topdown=False):
