@@ -610,4 +610,388 @@ class Utilities:
         pass
     
     
+class Analysis:
+
+    #%% (1)
+
+    import os
+    from tqdm import tqdm
+
+    import numpy as np
+    from numpy import linspace
+
+    from scipy.optimize import curve_fit
+    from scipy.stats import linregress
+
+    import pandas as pd
+
+    from tkinter import filedialog, Tk
+
+    #import ipywidgets as widgets
+    #from ipywidgets import Layout, Box
+
+    import matplotlib.pyplot as plt
+    from matplotlib import cm
+    #import seaborn as sns
+
+    import winsound
+    from operator import itemgetter
+
+    from tkinter import Tk, filedialog
+    import pandas as pd
+
+    version = '2.0'
+    modified = '2025-02-23'
+
+
+    #%% (1)- Select an excel file or CSV to load
+
+    #NOTE: Should have one sheet with either: 
+    #           1) 1 time column with 'time' somewhere in the name
+    #           2) a time column for every data column
+
+    root = Tk()
+    filename = filedialog.askopenfilename(title = "Select a spreadsheet to load.")
+    root.destroy()
+
+
+    #%% (2)- Run the selected file with a bunch of variable options
+
+    #Variables for running the selected file from above
+    dataframe = filename                  #Data to read in; if filename, open file; if empty, open dialog to select data file
+                                          # DataFrame, filename, CSV, or list
+    name_list = []                        #List of names to use for columns of data; if empty list, default to column name
+    folder_name = ''                      #Filepath to save data to (if selected)
+    data_type = ''                        # '' 'consumption' 'reactant' ; does data start flat and go up (consumption), or start high and decrease (reactant)
+    data_label = 'mg U'                       # 'torr'  'g U'  'mg U'
+
+    save_figure = True                    #Save graphs to same directory data is pulled from or use dialog to select folder
+    save_stat_df = False                  #Save the final dataframe to same directory data is pulled from or use dialog to select folder
+
+    mean_window_size = 10                 #General number of datapoints to use in rolling calculations (averaging, etc.)
+    differential_window_size = 10         #For 2nd differential calc, number of points to take in smoothing first differential before taking second differential
+    initial_trendline_window = .1         #fraction of total datapoints to use as start window
+    induction_threshold_percentage = 1.5    #Percentage of total consumption to call 'induction'
+    induction_window = 30                 #Number of centered-window points whose average must cross the threshold for 'induction' trigger
+    linear_region_trendline_window = 250   #Number of points to include in linear region trendline
+
+    comp_pressure = '-DiffPressure'       # '-DiffPressure'  '-DiffAccelPressure'
+    plt_second_axis = False               #Plot a second axis on the 'pressure' or 'consumption' graph
+    second_axis_type = '-DiffPressure'     # '-DiffPressure'  '-DiffAccelPressure'
+    plot_kin_regions = True               #Plot fit between 'linear trendline' and data
+
+    #____________________________________________________________________________________________________________________________
+
+    '''
+    Previous function values from anodization experiments (ANOD1 paper); pressure curves weren't used in that case, only w/w% consumption.
+        indices_to_plot = [0,1]
+        plot_kin_regions = True                 #Plot the induction time, linear region trendline, and onset of linear region lines
+        save_figure = True
     
+        mean_window_size = 200                  #window to take rolling averages from
+        initial_trendline_window = 0.12         #fraction of total datapoints to use as start window
+        induction_threshold_percentage = 1      #Percentage of total consumption to call 'induction'
+        induction_window = 100                  #Number of centered-window points whose average must cross the threshold for 'induction' trigger
+        linear_region_trendline_window = 500    #Number of points to include in linear region trendline
+        comp_pressure = '-DiffPressure'         # '-DiffPressure'  '-DiffAccelPressure'
+    '''
+
+
+    #Read/load the data
+    if type(dataframe)== str:
+        #Test if string is a filename
+        filename_test = os.path.isfile(dataframe)
+        folder_name = os.path.dirname(dataframe)
+        if filename_test:
+            foldername = os.path.dirname(dataframe)
+            if filename.endswith('.xlsx'):
+                df = pd.read_excel(dataframe)
+            if filename.endswith('.csv'):
+                df = pd.read_csv(dataframe)
+            dataframe = df
+        else:
+            folder_name = os.path.dirname(dataframe)
+        
+    elif type(dataframe)== pd.core.frame.DataFrame:
+        if len(folder_name)<1 and (save_figure or save_stat_df):
+            root = Tk()
+            foldername = filedialog.askdirectory(title = 'Select directory to save data in')
+            root.destroy()
+        else:
+            foldername = folder_name
+        
+    elif type(dataframe)== list:
+        dataframe = pd.DataFrame(dataframe)
+        if len(folder_name)<1 and (save_figure or save_stat_df):
+            root = Tk()
+            foldername = filedialog.askdirectory(title = 'Select directory to save data in')
+            root.destroy()
+        else:
+            foldername = folder_name
+
+    #Attempt to define the data
+    columns_list = list(dataframe.columns)
+    pressure_columns = [column for column in columns_list if 'time' not in column.lower()]
+    if len(name_list)<len(pressure_columns):
+        name_list = pressure_columns
+    time_columns = [column for column in columns_list if 'time' in column.lower()]
+
+    #Initialize and clean up variables
+    stat_df = pd.DataFrame()
+    single_time = False
+    matched_columns = False
+  
+      #handle time column to guess at right columns to use
+    if len(time_columns) ==1:
+        single_time = True
+        time_column = time_columns[0]
+    elif len(time_columns) ==0:
+        dataframe['Time (arb. units)']= range(dataframe.shape[0])
+    else:
+        if len(time_columns) == len(pressure_columns):
+            matched_columns = True
+        else:
+            single_time = True
+            max_length = 0
+            column_idx = 0
+            for idx, column in enumerate(time_columns):
+                this_series = dataframe[column].dropna()
+                this_len = this_series.shape[0]
+                if this_len > max_length:
+                    max_length = this_len
+                    column_idx = idx
+            time_column - time_columns[column_idx]
+        
+        
+    #Attempt to pull time units from time column
+    time_units = 'arb. units'
+    if single_time:
+        if 'min' in time_column.lower():
+            time_units = 'min'
+        if 'hrs' in time_column.lower():
+            time_units = 'hrs'
+        if 'days' in time_column.lower():
+            time_units = 'days'
+        if 'weeks' in time_column.lower():
+            time_units = 'weeks'
+    elif matched_columns:
+        time_unit_list = []
+        for column_name in time_columns:
+            if 'min' in column_name.lower():
+                time_unit_list.append('min')
+            if 'hrs' in column_name.lower():
+                time_unit_list.append('hrs')
+            if 'days' in column_name.lower():
+                time_unit_list.append('days')
+            if 'weeks' in column_name.lower():
+                time_unit_list.append('weeks')
+            
+    #Run through 
+    for idx, press_name in enumerate(pressure_columns):
+    
+        try:
+            #Attempt to define time column for pressure data from 
+            if single_time:
+                time_name = time_column
+            elif matched_columns:
+                time_name = time_columns[idx]
+            #TODO: no alternative at present; find a way to guess at time column
+            else:
+                pass
+    
+            #Define name
+            name = name_list[idx]
+            print()
+            print('_'*100)
+            print(name)
+    
+
+            #Generate initial columns
+            stat_df[str(name+'-Time')] = dataframe[time_name].copy(deep=True)
+            stat_df[str(name+'-DiffTime')] = dataframe[time_name].copy(deep=True).diff()
+            stat_df[str(name+'-AvgPressure')] = dataframe[press_name].copy(deep=True).rolling(mean_window_size, center = True).mean().dropna()
+            #stat_df[str(name+'-AvgPressure')] = np.mean(np.lib.stride_tricks.sliding_window_view(dataframe[press_name].copy(deep=True), (mean_window_size,)))
+            this_size = stat_df[str(name+'-AvgPressure')].dropna().shape[0]
+            print()
+            print(f"Datapoints: {this_size}")
+               #zero the pressure if there's a neative value
+            this_min = stat_df[str(name+'-AvgPressure')].min()
+            if this_min < 0:
+                stat_df[str(name+'-AvgPressure')] = stat_df[str(name+'-AvgPressure')]+ abs(this_min)
+            avg_min = stat_df[str(name+'-AvgPressure')].min()
+            avg_max = stat_df[str(name+'-AvgPressure')].max()
+    
+            #Get initial trendline
+            start_regress_start = mean_window_size
+            start_regress_end = start_regress_start + int(initial_trendline_window*this_size)
+            slope, intercept, r_value, p, o_std_err = linregress(stat_df[str(name+'-Time')][start_regress_start:start_regress_end], \
+                                                                 stat_df[str(name+'-AvgPressure')][start_regress_start:start_regress_end])
+            x_end = stat_df[str(name+'-Time')].shape[0]-start_regress_start-1
+            # NOTE: If time readings are long, fluctuations can result in strange slopes
+            #  This attempts to correct for that case
+            if slope <0:
+                #slope = 0
+                #intercept = stat_df[str(name+'-AvgPressure')][start_regress_start:start_regress_end].mean()
+                slope=slope
+                intercept=intercept
+                print("Negative initial trendline slope; coercing to 0.")
+            trendline_pressure = stat_df[str(name+'-Time')]*slope + intercept
+    
+            #First differential can be a strict dP or dP/dt
+            stat_df[str(name+'-DiffPressure')] = (stat_df[str(name+'-AvgPressure')].copy(deep=True).diff())
+    
+            #For acceleration (d2/dt2), take a rolling average first to smooth difference
+            stat_df[str(name+'-DiffAccelPressure')] = stat_df[str(name+'-DiffPressure')].copy().rolling(differential_window_size, center = True).mean()
+            stat_df[str(name+'-DiffAccelPressure')] = stat_df[str(name+'-DiffAccelPressure')].copy().diff()
+    
+            #Assign data to 'consumption' or 'reactant' curve type to calculate accurately
+            percent_values_to_average = 10
+            number_of_datapoints = int(this_size * (percent_values_to_average/100))
+            initial_average_value = stat_df[str(name+'-AvgPressure')][0:number_of_datapoints].mean()
+            ending_average_value = stat_df[str(name+'-AvgPressure')].dropna()[-number_of_datapoints::].mean()
+            if (data_type != 'consumption') and (data_type != 'reactant'):
+                if initial_average_value > ending_average_value:
+                    data_type = 'reactant'  #usually pressure in this case
+                if initial_average_value < ending_average_value:
+                    data_type = 'consumption'  #usually equivalent mass or consumed reactant curve
+            else:
+                #Not used currently, but should take user input into 'data_type' into consideration? Default to user?
+                pass
+    
+            #Calculate inductions time as a threshold percentage
+            if data_type == 'consumption':
+                total_consumption = (stat_df[str(name+'-AvgPressure')]- trendline_pressure).max()
+                induction_trigger = total_consumption*(induction_threshold_percentage/100)
+                induction_series = (stat_df[str(name+'-AvgPressure')]- trendline_pressure).rolling(mean_window_size).mean()
+            if data_type == 'reactant':
+                total_consumption = (trendline_pressure-stat_df[str(name+'-AvgPressure')]).max()
+                induction_trigger = total_consumption*(induction_threshold_percentage/100)
+                induction_series = (trendline_pressure- stat_df[str(name+'-AvgPressure')]).rolling(mean_window_size).mean()
+    
+            induction_time = stat_df[str(name+'-Time')][induction_series>induction_trigger].reset_index(drop=True)[0]
+            induction_consumption = stat_df[str(name+'-AvgPressure')][induction_series>induction_trigger].reset_index(drop=True)[0]
+    
+            print()
+            print("Induction Time: ")
+            print(" ", round(induction_time, 3))
+            print()
+            print("Consumption at Induction Time: ")
+            print(" ", round(induction_consumption, 5))
+            print()
+    
+    
+            #Get time at max acceleration
+            this_max_time_frame = stat_df[stat_df[str(name+comp_pressure)]== stat_df[str(name+comp_pressure)].copy().max()][str(name+'-Time')]
+            max_frame_idx = this_max_time_frame.reset_index()['index'][0]-2
+            max_real_idx = stat_df[str(name+comp_pressure)].dropna().shape[0]
+
+            linear_window_start = max_frame_idx-int(this_size*0.05)
+            if linear_window_start < 0:
+                linear_window_start = linear_region_trendline_window
+            slope, intercept, r_value, p, o_std_err = linregress(stat_df[str(name+'-Time')][linear_window_start:max_frame_idx], \
+                                                                 stat_df[str(name+'-AvgPressure')][linear_window_start:max_frame_idx])
+            linear_region_xs = stat_df[str(name+'-Time')][linear_window_start-linear_region_trendline_window:max_real_idx]
+            linear_region_trendline_ys = [slope*x+intercept for x in linear_region_xs]
+
+               #get and print the actual time of max differential
+            this_max_time = this_max_time_frame.reset_index(drop = True)[0]
+            print("Time at max acceleration: ")
+            print(" ", round(this_max_time, 3))
+            print()
+    
+            # Report slope in linear region
+            print("Linear region slope: ")
+            print(" ", round(slope, 5))
+            print()
+    
+            # Find onset of linear region from trendline difference
+            linear_region_diff = (linear_region_trendline_ys-stat_df[str(name+'-AvgPressure')][linear_window_start-linear_region_trendline_window:max_real_idx]).abs()
+            lin_reg_diff_list = linear_region_diff[linear_region_diff<=(linear_region_diff.abs().min()*50)]
+            first_lin_idx = lin_reg_diff_list.reset_index()['index'][0]
+            lin_reg_start_time = stat_df[str(name+'-Time')][first_lin_idx]
+            lin_reg_start_consumption = stat_df[str(name+'-AvgPressure')][first_lin_idx]
+       
+            # Report slope in linear region
+            print("Linear region start time: ")
+            print(" ", round(lin_reg_start_time, 1))
+            print()
+    
+            # Report slope in linear region
+            print("U-consumption at linear region start: ")
+            print(" ", round(lin_reg_start_consumption, 5))
+            print()
+
+            ###############################################################################################################
+    
+            # Plot the bizzz
+            fig, ax1 = plt.subplots(figsize=(12,7))
+            #ax1.scatter(range(stat_df[str(name+'-Time')].shape[0]), stat_df[str(name+'-AvgPressure')])
+            ax1.scatter(stat_df[str(name+'-Time')], stat_df[str(name+'-AvgPressure')], s=30, alpha = 0.1)
+            if plot_kin_regions:
+                ax1.plot(stat_df[str(name+'-Time')].values, trendline_pressure.values, color = 'indigo', linewidth = 2)
+                ax1.plot([induction_time, induction_time], [avg_min, avg_max/2], color = 'indigo', linewidth = 8, alpha = 0.5)
+                ax1.plot(linear_region_xs.values, linear_region_trendline_ys, color = 'lime', linewidth = 2)
+                ax1.plot([lin_reg_start_time, lin_reg_start_time], [avg_min, lin_reg_start_consumption], color = 'lime', linewidth = 5, alpha = 0.5)
+                ax1.plot([0, lin_reg_start_time], [lin_reg_start_consumption, lin_reg_start_consumption], color = 'lime', linewidth = 5, alpha = 0.5)
+       
+              # Second axis (used for plotting other stuff)
+            if plt_second_axis:
+                ax2 = ax1.twinx()
+                ax2.scatter(stat_df[str(name+'-Time')], stat_df[str(name+'-Test')], color = 'orange', s=20, alpha = 0.7)
+                if second_axis_type ==  '-DiffPressure':     # '-DiffPressure'  '-DiffAccelPressure'
+                    ax2.scatter(stat_df[str(name+'-Time')], stat_df[str(name+'-DiffPressure')], color = 'orange', s=20, alpha = 0.7)
+                if second_axis_type ==  '-DiffAccelPressure':
+                    ax2.scatter(stat_df[str(name+'-Time')], stat_df[str(name+'-DiffAccelPressure')], color = 'orange', s=20, alpha = 0.7)
+                ax2.set_ylabel('d(Pressure)/dt', fontsize = 14)
+    
+              #set axis limits
+            x_max = stat_df[str(name+'-AvgPressure')].dropna().reset_index()['index'].iloc[-1]
+            y_min = stat_df[str(name+'-AvgPressure')].min()-1
+            y_max  = stat_df[str(name+'-AvgPressure')].max()+1
+            plt.xlim(0, x_max+(x_max*.1))
+            plt.ylim(y_min, y_max)
+            #plt.ylim(bottom = -1e-7)
+            ax1.set_xlabel(str("Time("+time_units+")"), fontsize = 20)
+            if data_type == 'reactant':
+                ax1.set_ylabel(f'Pressure ({data_label})', fontsize = 20)
+            if data_type == 'consumption':
+                ax1.set_ylabel(f'Mass consumed ({data_label})', fontsize = 20)
+            plt.title(name, fontsize = 16)
+            # Save plot if selected
+            if save_figure:
+                this_file_name = name+'_KineticFigure.jpg'
+                this_filepath = os.path.join(foldername, this_file_name)
+        
+                plt.savefig(this_filepath, dpi= 600, format = 'jpg', bbox_inches='tight',)
+    
+            #Set y-values for clarity
+            y_min = stat_df[str(name+'-AvgPressure')].min()
+            y_max = stat_df[str(name+'-AvgPressure')].max()
+            y_span_diff = y_max-y_min
+            y_span_pad = y_span_diff *0.05
+            if y_span_diff < 1:
+                y_span_pad = y_span_diff *0.01
+            else:
+                y_span_pad = y_span_diff *0.05
+    
+            plt.ylim((y_min-y_span_pad),(y_max+y_span_pad))
+            plt.show()
+    
+            # Plot the Linear region trendline
+            if plot_kin_regions:
+                plt.figure(figsize = (12, 4))
+                plt.plot(linear_region_diff, linewidth = 3, alpha = 0.5)
+                extremal_indices = [linear_region_diff.dropna().reset_index()['index'][0], linear_region_diff.dropna().reset_index()['index'].iloc[-1]]
+                plt.plot([first_lin_idx, first_lin_idx], [0, linear_region_diff.max()*1.1], color = 'lime', linewidth = 5, alpha=0.5)
+                plt.plot(extremal_indices, [0,0], color = 'lime', linewidth = 1, alpha = 0.9)
+                plt.title(f"Linear region fit plot ({name})", fontsize = 16)
+                plt.ylabel("Trendline-Data Difference", fontsize = 14)
+                plt.xlabel("Data Index", fontsize = 14)
+                plt.show()
+
+        except Exception as exc:
+            print(f"Failed on {idx+1} of {len(filenames_list)}")
+            print()
+            print("Error Traceback:")
+            print(traceback.format_exc())
+            print()
