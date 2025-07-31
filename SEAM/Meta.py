@@ -12,6 +12,8 @@ from pathlib import Path
 from TypeHash import TypeHash
 from tkinter import Tk, filedialog
 
+from SEAM import SEAM.seam_config
+
 #from SEAM import SEAM 
 
 #TODO: alter to handle filename clash better
@@ -197,7 +199,6 @@ class Meta:
             #If no root .seam defined, save to local repo by 'seam_config.json' data
             except:
                 #Find config file if main root doesn't exist
-                import seam_config
                 dump_dir = os.path.join(seam_config.working_directory, 'meta_dicts')
                 trial_filepath = os.path.join(dump_dir, meta_filename_str)
                 
