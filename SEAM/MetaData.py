@@ -8,13 +8,9 @@ Created on Aug 10 2024
 import json
 import os
 from pathlib import Path
-#from SEAM import SEAM
-from TypeHash import TypeHash
 from tkinter import Tk, filedialog
 
-from SEAM import SEAM.seam_config
-
-#from SEAM import SEAM 
+from TypeHash import Fingerprint
 
 #TODO: alter to handle filename clash better
 #   - Add 'clash' key to 'meta_dict'
@@ -135,7 +131,7 @@ class Meta:
         meta_filepath = os.path.join(meta_dict_root, meta_filename_str)
         
         #Get basic file info
-        basic_file_summary = TypeHash.get_basic_info(original_filepath)
+        basic_file_summary = Fingerprint.get_basic_info(original_filepath)
         
         #TODO: use TypeHash to get advanced file summary based on recipes
           #TODO: put into PROCESS queue 

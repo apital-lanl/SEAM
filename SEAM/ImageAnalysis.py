@@ -10,7 +10,7 @@ Description: Set of classes for handling SEM, laser profilometry
 date_modified = '2025-05-28'
 version = '1.4.4 (unmerged beta)'
 
-from Meta import Meta
+from MetaData import Meta
 
 import cv2
 import datetime

@@ -17,8 +17,8 @@ import shutil
 import errno
   
   #import other SEAM modules
-from TypeHash import TypeHash
-from Meta import Meta
+from TypeHash import Fingerprint
+from MetaData import Meta
 
 
    #    SEAM variables   ##########################################################################
