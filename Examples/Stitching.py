@@ -2,7 +2,7 @@
 #%%  SEM image stitching (2025-02-11)
 
  #SEAM modules
-from SEAM import SEAM
+from MetaClass import SEAM
 from ImageAnalysis import SEM, Keyence
  #Python-native labraries
 from tkinter import Tk, filedialog
