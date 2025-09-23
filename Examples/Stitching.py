@@ -2,7 +2,7 @@
 #%%  SEM image stitching (2025-02-11)
 
  #SEAM modules
-from SEAM import SEAM
+from MetaClass import SEAM
 from ImageAnalysis import SEM, Keyence
  #Python-native labraries
 from tkinter import Tk, filedialog
@@ -16,7 +16,8 @@ global GFA
 # 'False'- try and alighn images by homography; get image features and try to align them
 
 dumb_stitch = True
-other_save_location = r'F:\New SEM Montages'   # 'GUI' '' or filepath
+other_save_location = r'Z:\SEM Stitched and Annotated Images\New Stitched Montages'   # 'GUI' '' or filepath
+    # Example filepaths r'Z:\SEM Stitched and Annotated Images\New Stitched Montages'   Z: drive is Corrosion on this computer
 if other_save_location == 'GUI':
     root = Tk()
     other_save_location = filedialog.askdirectory(title="Select an additional location to save stitch copies to.")
@@ -31,33 +32,33 @@ else:
 # # # Select the files to stitch
 # # # NOTE: you'll need to click the console panel (prob bottom right of this window) to type Y/N
 
-continue_check = True
-filename_lists = []
-f_list_idx = 0
-while continue_check:
+# continue_check = True
+# filename_lists = []
+# f_list_idx = 0
+# while continue_check:
     
-    # Get the names by user selection
-    root = Tk()
-    #root.withdraw()
-    these_filenames = filedialog.askopenfilenames(title= 'Select images to stitch', filetypes = [("TIFs", '.tif')])
-    root.destroy()
+#     # Get the names by user selection
+#     root = Tk()
+#     #root.withdraw()
+#     these_filenames = filedialog.askopenfilenames(title= 'Select images to stitch', filetypes = [("TIFs", '.tif')])
+#     root.destroy()
     
-    # Sort to get images in left-to-right, top-to-bottom order by index (hopefully)
-    filename_lists.append(SEM.sort_filenames(these_filenames))
+#     # Sort to get images in left-to-right, top-to-bottom order by index (hopefully)
+#     filename_lists.append(SEM.sort_filenames(these_filenames))
     
-    # Get and print representative filename to make it easeier to keep your place
-    dirname = os.path.dirname(these_filenames[0])
-    foldername = os.path.basename(dirname)
-    example_filename = os.path.basename(these_filenames[0])
-    print(f"{f_list_idx} \t {foldername}--{example_filename}")
-    f_list_idx += 1
+#     # Get and print representative filename to make it easeier to keep your place
+#     dirname = os.path.dirname(these_filenames[0])
+#     foldername = os.path.basename(dirname)
+#     example_filename = os.path.basename(these_filenames[0])
+#     print(f"{f_list_idx} \t {foldername}--{example_filename}")
+#     f_list_idx += 1
     
-    # Ask if user want to add more
-    user_report = input("Stitch another set of images (y/n or any key+ENTER to quit)").lower()
-    if 'y' in user_report:
-        continue_check = True
-    else:
-        continue_check = False
+#     # Ask if user want to add more
+#     user_report = input("Stitch another set of images (y/n or any key+ENTER to quit)").lower()
+#     if 'y' in user_report:
+#         continue_check = True
+#     else:
+#         continue_check = False
     
 
 # Do the actual stitching and log results
