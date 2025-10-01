@@ -470,14 +470,17 @@ class Process:
     Utility class for parsing, creating, and maintaining .prcs (PROCESS) files
     '''
     
-    blank_process = {
-        'name': '',
-        'version': '',
-        'date_created': '',
-        'date_modified': '',
+    blank_process_dict = {
+        'info': {
+            'name': '',
+            'version': '',
+            'date_created': '',
+            'date_modified': ''
+            },
         'recipe_filename':'',
-        'specs_filename':'', 
-        
+        'specs_filename':'',
+        'queue': {},
+        'completed': {}
         }
     
     
