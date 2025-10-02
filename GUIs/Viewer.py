@@ -16,7 +16,7 @@ Description:
 
 
 Notes:
-- Renamed from 'SH2D' to 'SpatialArray' 2024-09-13
+    -
 """
 
 import tkinter as tk
