@@ -26,6 +26,11 @@ from pathlib import Path
 import json
 import math
 
+blank_tree_dict = {
+    'projects': [],
+    
+    }
+
 class Landing_GUI:
     def __init__(self, root):
         self.root = root
@@ -122,7 +127,7 @@ class Landing_GUI:
         # Output Menu
         output_menu = tk.Menu(menu_bar, tearoff=0)
         output_menu.add_command(label="Export Results", command=self.export_results)
-        output_menu.add_command(label="Print Report", command=self.print_report)
+        output_menu.add_command(label="Create Report", command=self.print_report)
         menu_bar.add_cascade(label="Output", menu=output_menu)
         
         self.root.config(menu=menu_bar)
@@ -162,13 +167,13 @@ class Landing_GUI:
         ttk.Entry(self.seam_frame, textvariable=self.mirror_repo_var).pack(fill=tk.X, padx=5, pady=2)
         
         # Analyze Block
-        self.analyze_frame = ttk.LabelFrame(self.left_panel, text="Analyze")
+        self.analyze_frame = ttk.LabelFrame(self.left_panel, text="Data Analysis")
         self.analyze_frame.pack(fill=tk.X, padx=5, pady=5)
         
-        ttk.Button(self.analyze_frame, text="Analyze selection", command=self.analyze_selection).pack(fill=tk.X, padx=5, pady=2)
+        ttk.Button(self.analyze_frame, text="Open Selection Analysis", command=self.analyze_selection).pack(fill=tk.X, padx=5, pady=2)
         ttk.Button(self.analyze_frame, text="Generate Report", command=self.generate_report).pack(fill=tk.X, padx=5, pady=2)
         ttk.Button(self.analyze_frame, text="Save Analysis", command=self.save_analysis).pack(fill=tk.X, padx=5, pady=2)
-        ttk.Button(self.analyze_frame, text="Load Analysis", command=self.load_analysis).pack(fill=tk.X, padx=5, pady=2)
+        ttk.Button(self.analyze_frame, text="Open Analysis", command=self.load_analysis).pack(fill=tk.X, padx=5, pady=2)
         
         # Display Block
         self.display_frame = ttk.LabelFrame(self.left_panel, text="Display")
@@ -646,29 +651,31 @@ class Landing_GUI:
             self.mirror_repo_var.set(directory)
             messagebox.showinfo("Mirror Repository", f"Added mirror repository: {directory}")
 
-    def update_tree(self):
-        # Sample tree view dictionary
-        sample_dict = {
-            "Project A": {
-                "Data": {
-                    "file1.dat": "50 KB",
-                    "file2.dat": "120 KB"
+    def update_tree(self, tree_dict):
+        
+        if len(tree_dict)==0:
+            # Sample tree view dictionary
+            tree_dict = {
+                "Project A": {
+                    "Data": {
+                        "file1.dat": "50 KB",
+                        "file2.dat": "120 KB"
+                    },
+                    "Results": {
+                        "analysis.txt": "10 KB",
+                        "graph.png": "200 KB"
+                    }
                 },
-                "Results": {
-                    "analysis.txt": "10 KB",
-                    "graph.png": "200 KB"
-                }
-            },
-            "Project B": {
-                "Raw Data": {
-                    "scan001.dat": "1.2 MB",
-                    "scan002.dat": "1.5 MB"
+                "Project B": {
+                    "Raw Data": {
+                        "scan001.dat": "1.2 MB",
+                        "scan002.dat": "1.5 MB"
+                    }
                 }
             }
-        }
         
         # Update the tree view dictionary and populate the tree
-        self.tree_view_dict = sample_dict
+        self.tree_view_dict = tree_dict
         self.populate_tree_from_dict(self.tree_view_dict)
         messagebox.showinfo("Tree Updated", "Tree view has been updated")
 
@@ -700,15 +707,28 @@ class Landing_GUI:
 
     def expand_right_panel(self):
         # Adjust the paned window to give more space to the right panel
-        pane_positions = self.paned_window.panes()
-        if len(pane_positions) >= 3:
-            # Get current window width
-            window_width = self.root.winfo_width()
+        # Get current window width
+        window_width = self.root.winfo_width()
+        
+        # Calculate new positions for the sashes
+        first_sash_pos = int(window_width * 0.15)  # 15% for left panel
+        second_sash_pos = int(window_width * 0.35)  # 20% for middle panel, 65% for right panel
+        
+        # Set the sash positions
+        try:
+            self.paned_window.sashpos(0, first_sash_pos)
+            self.paned_window.sashpos(1, second_sash_pos)
+            messagebox.showinfo("Expand Right Panel", "Right panel expanded")
+        except Exception as e:
+            # Alternative approach if sashpos doesn't work
+            self.paned_window.forget(self.left_panel)
+            self.paned_window.forget(self.middle_panel)
+            self.paned_window.forget(self.right_panel)
             
-            # Set positions to give most space to right panel
-            self.paned_window.paneconfig(self.left_panel, weight=1)
-            self.paned_window.paneconfig(self.middle_panel, weight=1)
-            self.paned_window.paneconfig(self.right_panel, weight=5)
+            # Re-add with appropriate weights
+            self.paned_window.add(self.left_panel, weight=1)
+            self.paned_window.add(self.middle_panel, weight=2)
+            self.paned_window.add(self.right_panel, weight=7)
             
             messagebox.showinfo("Expand Right Panel", "Right panel expanded")
 
