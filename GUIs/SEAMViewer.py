@@ -25,6 +25,7 @@ import os
 from pathlib import Path
 import json
 import math
+from GUIs.AnnotatePDF import PDFAnnotator
 
 blank_tree_dict = {
     'projects': [],
@@ -170,9 +171,9 @@ class Landing_GUI:
         self.analyze_frame = ttk.LabelFrame(self.left_panel, text="Data Analysis")
         self.analyze_frame.pack(fill=tk.X, padx=5, pady=5)
         
-        ttk.Button(self.analyze_frame, text="Open Selection Analysis", command=self.analyze_selection).pack(fill=tk.X, padx=5, pady=2)
+        ttk.Button(self.analyze_frame, text="Open Analysis for Selection", command=self.open_analysis_window).pack(fill=tk.X, padx=5, pady=2)
         ttk.Button(self.analyze_frame, text="Generate Report", command=self.generate_report).pack(fill=tk.X, padx=5, pady=2)
-        ttk.Button(self.analyze_frame, text="Save Analysis", command=self.save_analysis).pack(fill=tk.X, padx=5, pady=2)
+        ttk.Button(self.analyze_frame, text="Annotate PDF", command=self.open_annotate_pdf).pack(fill=tk.X, padx=5, pady=2)
         ttk.Button(self.analyze_frame, text="Open Analysis", command=self.load_analysis).pack(fill=tk.X, padx=5, pady=2)
         
         # Display Block
@@ -218,13 +219,27 @@ class Landing_GUI:
         
         # Configure headings
         self.tree.heading("#0", text="Name", anchor=tk.W)
-        self.tree.heading("type", text="Type", anchor=tk.W)
-        self.tree.heading("size", text="Size", anchor=tk.W)
+        self.tree.heading("type", text="Filetype", anchor=tk.W)
+        self.tree.heading("size", text="Number of entries", anchor=tk.W)
+        
+        # Configure categories
+        self.tree.insert("", "end", text="All SEAM contents", values=("Folder", ""), iid="all_seami", open=False)
+        self.tree.insert("all_seami", "end", text="Project Files", values=("Folder", ""), iid="all_projects", open=False)
+        self.tree.insert("all_seami", "end", text="GROUP Files", values=("Folder", ""), iid="all_groups", open=False)
+        self.tree.insert("all_seami", "end", text="RECIPE Files", values=("Folder", ""), iid="all_recipes", open=False)
+        self.tree.insert("all_seami", "end", text="SPECIFICATIONS Files", values=("Folder", ""), iid="all_specs", open=False)
+        self.tree.insert("all_seami", "end", text="SEAM Results", values=("Folder", ""), iid="all_results", open=False)
+        
+        # Configure categories
+        self.tree.insert("", "end", text="Current Project", values=("Folder", ""), iid="current_project", open=False)
+        self.tree.insert("current_project", "end", text="GROUP Files", values=("Folder", ""), iid="current_groups", open=False)
+        self.tree.insert("current_project", "end", text="SPEC Files", values=("Folder", ""), iid="current_processes", open=False)
+        self.tree.insert("current_project", "end", text="RECIPE Files", values=("Folder", ""), iid="recipes", open=False)
         
         # Sample data
-        self.tree.insert("", "end", text="Sample Folder", values=("Folder", ""), iid="folder1", open=True)
-        self.tree.insert("folder1", "end", text="Sample File 1", values=("File", "10 KB"), iid="file1")
-        self.tree.insert("folder1", "end", text="Sample File 2", values=("File", "20 KB"), iid="file2")
+        # self.tree.insert("", "end", text="Sample Folder", values=("Folder", ""), iid="folder1", open=False)
+        # self.tree.insert("folder1", "end", text="Sample File 1", values=("File", "10 KB"), iid="file1")
+        # self.tree.insert("folder1", "end", text="Sample File 2", values=("File", "20 KB"), iid="file2")
 
     def create_right_panel_canvas(self):
         # Create a frame for the canvas
@@ -530,6 +545,12 @@ class Landing_GUI:
     def set_seam_root(self):
         messagebox.showinfo("SEAM Root", "Set SEAM Root functionality")
 
+    def open_annotate_pdf(self):
+        annotator_window = tk.Toplevel(self.root)
+        app = PDFAnnotator(annotator_window)
+        annotator_window.mainloop()
+
+
     def load_project(self):
         file_path = filedialog.askopenfilename(
             title="Load Project",
@@ -679,7 +700,11 @@ class Landing_GUI:
         self.populate_tree_from_dict(self.tree_view_dict)
         messagebox.showinfo("Tree Updated", "Tree view has been updated")
 
-    def analyze_selection(self):
+    def open_analysis_window(self):
+        """
+        Description: Take selected items from tree view, create a new analysis window, and populate with selection.
+        """
+        
         if not self.selected_objects:
             messagebox.showinfo("No Selection", "Please select items to analyze")
         else:

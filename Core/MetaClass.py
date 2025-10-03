@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-© 2025. Triad National Security, LLC. All rights reserved.
+Â© 2025. Triad National Security, LLC. All rights reserved.
 This program was produced under U.S. Government contract 89233218CNA000001 for Los Alamos National 
 Laboratory (LANL), which is operated by Triad National Security, LLC for the U.S. Department of 
 Energy/National Nuclear Security Administration. All rights in the program are reserved by Triad 
@@ -26,14 +26,14 @@ import shutil
 import errno
   
   #import other SEAM modules
-from TypeHash import Fingerprint
-from MetaData import Meta
+from Core.TypeHash import Fingerprint
+from Core.MetaData import Meta
 
 
    #    SEAM variables   ##########################################################################
    
    
-class SEAM:
+class Project:
     
     ''' v0.1.0   created:2024-04-12   modified:2025-07-19
     
@@ -55,7 +55,7 @@ class SEAM:
         }
 
     
-    def __init__(self, work_dir='', alt_root=''):
+    def __init__(self, project_path = None, work_dir= None, alt_root= None):
 
         #initialize some object instance fields
         self.log = {
@@ -71,22 +71,23 @@ class SEAM:
         self.failed_processes = {
             }
         
+        
         #set flags for SEAM repositories
         recipe_check = False
         meta_check = False
 
         # Check for SEAM root folder and get global
         root_home = str(Path.home())
-        if len(alt_root)>0:
-            self.user_root = alt_root
-        else:
-            self.user_root = root_home
         self.current_workingdir = root_home
-        #reset 'root_home'
-        root_home = self.user_root
+        
+        if alt_root != None:
+            self.user_root = alt_root
+            root_home = self.user_root
+        else:
+            root_home 
         
         # .seam root directory and branch
-        if len(work_dir)>0:
+        if work_dir != None:
             self.current_workingdir = work_dir
         
           #no matter what, try to find the root SEAM repo; make one in the root if you can't find it there
@@ -129,11 +130,15 @@ class SEAM:
         #set the global 'seam_root' to the
         seam_root = os.path.join(root_home, ".seam")
         self.seam_root = seam_root
+        
+        self.project_dict = {
+            '':''
+            }
 
     
     def create_seam_directory(self, root_dir, ok_exist_mode = False):
         
-        ''' v0.1.1   created:2024-06-19   modified:2024-06-19
+        ''' v0.1.1   created:2024-06-19
         
         Generate the SEAM backend repository structure.
         
@@ -147,36 +152,31 @@ class SEAM:
         
         self.recipes_root_directory = os.path.join(root_dir, "Recipes")
         os.makedirs(self.recipes_root_directory, exist_ok = ok_exist_mode)
-        os.makedirs(os.path.join(self.recipes_root_directory, "Group Events"), exist_ok = ok_exist_mode)
-        os.makedirs(os.path.join(self.recipes_root_directory, "Objects"), exist_ok = ok_exist_mode)
-        os.makedirs(os.path.join(self.recipes_root_directory, "Processes"), exist_ok = ok_exist_mode)
-        os.makedirs(os.path.join(self.recipes_root_directory, "Environments"), exist_ok = ok_exist_mode)
-        os.makedirs(os.path.join(self.recipes_root_directory, "Filetypes"), exist_ok = ok_exist_mode)
         
-        os.makedirs(os.path.join(self.recipes_root_directory, "Perspectives"), exist_ok = ok_exist_mode)
-        os.makedirs(os.path.join(self.recipes_root_directory, "Perspectives", "Samples"), exist_ok = ok_exist_mode)
-        os.makedirs(os.path.join(self.recipes_root_directory, "Perspectives", "Projects"), exist_ok = ok_exist_mode)
-        os.makedirs(os.path.join(self.recipes_root_directory, "Perspectives", "Timelines"), exist_ok = ok_exist_mode)
-        
-        self.instances_root_directory = os.path.join(root_dir, "Instances")
-        os.makedirs(self.instances_root_directory, exist_ok = ok_exist_mode)
+        self.projects_root_directory = os.path.join(root_dir, "Projects")
+        os.makedirs(self.projects_root_directory, exist_ok = ok_exist_mode)
 
         self.typehash_root_directory = os.path.join(root_dir, "TypeHashes")
         os.makedirs(self.typehash_root_directory, exist_ok = ok_exist_mode)
 
-        self.event_root_directory = os.path.join(root_dir, "Events")
-        os.makedirs(self.event_root_directory, exist_ok = ok_exist_mode)
-        os.makedirs(os.path.join(self.event_root_directory, "Proposed"), exist_ok = ok_exist_mode)
-        os.makedirs(os.path.join(self.event_root_directory, "History"), exist_ok = ok_exist_mode)
-
-        self.event_root_directory = os.path.join(root_dir, "Data")
-        os.makedirs(self.event_root_directory, exist_ok = ok_exist_mode)
+        self.data_root_directory = os.path.join(root_dir, "Data")
+        os.makedirs(self.data_root_directory, exist_ok = ok_exist_mode)
 
         self.template_root_directory = os.path.join(root_dir, "Templates")
         os.makedirs(self.template_root_directory, exist_ok = ok_exist_mode)
         
-        self.log_root_directory = os.path.join(root_dir, "logs")
+        self.log_root_directory = os.path.join(root_dir, "Logs")
         os.makedirs(self.log_root_directory, exist_ok = ok_exist_mode)
+        
+        self.label_root_directory = os.path.join(root_dir, "Labels")
+        os.makedirs(self.label_root_directory, exist_ok = ok_exist_mode)
+        
+        self.links_root_directory = os.path.join(root_dir, "Links")
+        os.makedirs(self.links_root_directory, exist_ok = ok_exist_mode)
+        
+        self.objects_root_directory = os.path.join(root_dir, "Objects")
+        os.makedirs(self.objects_root_directory, exist_ok = ok_exist_mode)
+        
 
         #Create generic config file 
         config_dict = {
@@ -196,7 +196,7 @@ class SEAM:
         Load data for a .prcs or .seami file into a SEAM object.
         '''
 
-        filetype_dict = TypeHash.filetype_flags
+        filetype_dict = Fingerprint.filetype_flags
         
         if len(args)>0:
             seam_files = []
@@ -305,7 +305,7 @@ class SEAM:
         Temporarily dump a dictionary as a JSON rather than incorporate fully into a SEAMi file (or equivalent)
         '''
         if len(dump_filepath)>0:
-            dump_filepath = SEAM.Utilities.checkfile(dump_filepath)
+            dump_filepath = Utilities.checkfile(dump_filepath)
         
         else:
             # Check for SEAM root folder and get global
