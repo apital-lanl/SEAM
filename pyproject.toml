@@ -1,0 +1,4 @@
+[project]
+name = "SEAM"
+version = "4.1.0"
+description = "Stitching and Event Aware Metaclass (SEAM) library wraps a suite of sub-modules to fingerprint, relate, and summarize data and datafiles. A 'metaclass' is created on the fly, but indexing of data files and pre-processing through SEAM.Core.MetaData utilities is recommended."

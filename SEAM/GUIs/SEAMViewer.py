@@ -1,6 +1,6 @@
 
 """
-© 2025. Triad National Security, LLC. All rights reserved.
+2025. Triad National Security, LLC. All rights reserved.
 This program was produced under U.S. Government contract 89233218CNA000001 for Los Alamos National 
 Laboratory (LANL), which is operated by Triad National Security, LLC for the U.S. Department of 
 Energy/National Nuclear Security Administration. All rights in the program are reserved by Triad 
@@ -25,12 +25,14 @@ import os
 from pathlib import Path
 import json
 import math
-from GUIs.AnnotatePDF import PDFAnnotator
+from SEAM.GUIs.AnnotatePDF import PDFAnnotator
+from SEAM.GUIs.AnnotateDefects import DefectAnnotator
 
 blank_tree_dict = {
     'projects': [],
     
     }
+
 
 class Landing_GUI:
     def __init__(self, root):
@@ -171,10 +173,11 @@ class Landing_GUI:
         self.analyze_frame = ttk.LabelFrame(self.left_panel, text="Data Analysis")
         self.analyze_frame.pack(fill=tk.X, padx=5, pady=5)
         
-        ttk.Button(self.analyze_frame, text="Open Analysis for Selection", command=self.open_analysis_window).pack(fill=tk.X, padx=5, pady=2)
-        ttk.Button(self.analyze_frame, text="Generate Report", command=self.generate_report).pack(fill=tk.X, padx=5, pady=2)
         ttk.Button(self.analyze_frame, text="Annotate PDF", command=self.open_annotate_pdf).pack(fill=tk.X, padx=5, pady=2)
-        ttk.Button(self.analyze_frame, text="Open Analysis", command=self.load_analysis).pack(fill=tk.X, padx=5, pady=2)
+        ttk.Button(self.analyze_frame, text="Annotate Image (corrosion)", command=self.open_annotate_corrosion).pack(fill=tk.X, padx=5, pady=2)
+        ttk.Button(self.analyze_frame, text="Selection Analysis", command=self.open_analysis_window).pack(fill=tk.X, padx=5, pady=2)
+        ttk.Button(self.analyze_frame, text="Generate Report", command=self.generate_report).pack(fill=tk.X, padx=5, pady=2)
+        ttk.Button(self.analyze_frame, text="Open Analysis Window", command=self.load_analysis).pack(fill=tk.X, padx=5, pady=2)
         
         # Display Block
         self.display_frame = ttk.LabelFrame(self.left_panel, text="Display")
@@ -550,6 +553,10 @@ class Landing_GUI:
         app = PDFAnnotator(annotator_window)
         annotator_window.mainloop()
 
+    def open_annotate_corrosion(self):
+        defect_window = tk.Toplevel(self.root)
+        app = DefectAnnotator(defect_window)
+        defect_window.mainloop()
 
     def load_project(self):
         file_path = filedialog.askopenfilename(

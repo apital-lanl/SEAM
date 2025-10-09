@@ -17,7 +17,7 @@ import json
 import os
 import math
 
-class ImageAnnotation:
+class DefectAnnotator:
     def __init__(self, root):
         self.root = root
         self.root.title("Image Annotation Tool")
