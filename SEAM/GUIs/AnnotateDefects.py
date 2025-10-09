@@ -425,9 +425,17 @@ class DefectAnnotator:
                 self.filename_var.set(filename)
                 self.parent_dir_var.set(parent_dir)
                 self.root_dir_var.set(root_dir)
+                filename_guess = os.path.join(os.path.dirname(file_path), os.path.splitext(filename)[0] + "_annotations.json")
+
+                try:
+                    self.load_annotations(filename_guess)
+                except:
+                    messagebox.showerror("Note:", f"Could not find prior annotations. \n Looked for {filename_guess}")
                 
                 # Update status
                 self.status_bar.config(text=f"Loaded: {filename} ({self.image.width}x{self.image.height})")
+
+
                 
             except Exception as e:
                 messagebox.showerror("Error", f"Could not load image: {e}")
@@ -1102,12 +1110,14 @@ class DefectAnnotator:
         if not self.image_path:
             messagebox.showwarning("Warning", "No image loaded.")
             return
+        else:
+            filename_guess = os.path.splitext(os.path.basename(self.image_path))[0] + "_annotations.json"
             
         file_path = filedialog.asksaveasfilename(
             defaultextension=".json",
             filetypes=[("JSON files", "*.json")],
-            initialfile=os.path.splitext(os.path.basename(self.image_path))[0] + "_annotations.json"
-        )
+            initialfile= filename_guess
+            )
         
         if file_path:
             try:
@@ -1117,10 +1127,11 @@ class DefectAnnotator:
             except Exception as e:
                 messagebox.showerror("Error", f"Could not save annotations: {e}")
     
-    def load_annotations(self):
-        file_path = filedialog.askopenfilename(
-            filetypes=[("JSON files", "*.json")]
-        )
+    def load_annotations(self, file_path=None):
+        if file_path == None:
+            file_path = filedialog.askopenfilename(
+                filetypes=[("JSON files", "*.json")]
+                )
         
         if file_path:
             try:
@@ -1200,5 +1211,5 @@ class DefectAnnotator:
 
 if __name__ == "__main__":
     root = tk.Tk()
-    app = ImageAnnotation(root)
+    app = DefectAnnotator(root)
     root.mainloop()

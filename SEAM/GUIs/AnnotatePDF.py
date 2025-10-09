@@ -13,6 +13,7 @@ import tkinter as tk
 from tkinter import ttk, colorchooser, filedialog, messagebox, scrolledtext
 from PIL import Image, ImageTk
 import io
+import os
 
 class PDFAnnotator:
     def __init__(self, root):
@@ -211,20 +212,24 @@ class PDFAnnotator:
         # Custom color buttons with labels - Row 3 and 4
         # Define colors and labels
         color_labels = [
-            ("#FF0000", "Text, titles"),     # Red
-            ("#FFA500", "Text, summary"),    # Orange
-            ("#FFFF00", "Text, body"),       # Yellow
-            ("#00FF00", "Text, caption"),    # Green
-            ("#0000FF", "Figure"),           # Blue
-            ("#800080", "Table"),            # Purple
-            ("#FF00FF", "References"),       # Bright Purple
-            ("#00FFFF", "Special-1")         # Bright Blue
+            ("#F53C14", "Text, titles"),        # Red
+            ("#F56E14", "Text, authors"),       # Orange
+            ("#F5C814", "Text, abstract"),      # Yellow
+            ("#97F514", "Text, body"),          # Yellow-green
+            ("#B57422", "Text, author info"),   # Burnt orange
+            ("#14BA94", "Text, caption"),       # Green
+            ("#2CA6DE", "Text, references"),    # Blue
+            ("#6725F7", "Figure"),              # Blurple
+            ("#CD25F7", "Table"),               # Pink-Purple
+            ("#DE2CD6", "Special-1"),           # Bright pink
+            ("#F725A3", "Special-2"),           # Bright pink
+            ("#F01D52", "Special-3")            # Bright pink
         ]
         
         # Create color buttons in a grid layout (4 per row)
         for i, (color, label) in enumerate(color_labels):
-            row = 2 + (i // 4)  # Start at row 2 (after Draw Rect. and Color buttons)
-            col = i % 4
+            row = 2 + (i // 3)  # Start at row 2 (after Draw Rect. and Color buttons)
+            col = i % 3
             
             # Create a frame to hold the button and label
             item_frame = ttk.Frame(button_frame)
@@ -241,14 +246,14 @@ class PDFAnnotator:
         
         # Row 5 (after custom colors)
         self.modify_button = ttk.Button(button_frame, text="Modify", command=self.modify_polygon)
-        self.modify_button.grid(row=4, column=0, padx=2, pady=2, sticky="ew")
+        self.modify_button.grid(row=6, column=0, padx=2, pady=2, sticky="ew")
         
         self.clear_button = ttk.Button(button_frame, text="Clear", command=self.clear_selected)
-        self.clear_button.grid(row=4, column=1, padx=2, pady=2, sticky="ew")
+        self.clear_button.grid(row=6, column=1, padx=2, pady=2, sticky="ew")
         
         # Row 6
         self.clear_all_button = ttk.Button(button_frame, text="Clear All", command=self.clear_all)
-        self.clear_all_button.grid(row=5, column=0, columnspan=2, padx=2, pady=2, sticky="ew")
+        self.clear_all_button.grid(row=7, column=0, columnspan=2, padx=2, pady=2, sticky="ew")
         
         # Configure grid columns to have equal width
         for i in range(4):
@@ -280,6 +285,13 @@ class PDFAnnotator:
                 self.used_colors.append(self.current_color)
     
     def open_pdf(self):
+
+        #Reset all polygons
+        self.polygons = {}  # Dictionary to store polygons by page: {page_num: [(polygon, color), ...]}
+        self.current_polygon = []
+        self.selected_polygon_index = -1
+        self.polygon_dict = {}  # Dictionary to store polygons and their content
+
         file_path = filedialog.askopenfilename(
             title="Open PDF", 
             filetypes=[("PDF Files", "*.pdf")]
@@ -294,7 +306,7 @@ class PDFAnnotator:
                 self.page_label.config(text=f"Page: {self.current_page + 1}/{self.pdf_document.page_count}")
                 
                 # Update file information
-                import os
+                self.filepath = file_path
                 filename = os.path.basename(file_path)
                 parent_dir = os.path.basename(os.path.dirname(file_path))
                 grandparent_dir = os.path.dirname(os.path.dirname(file_path))
@@ -302,6 +314,13 @@ class PDFAnnotator:
                 self.filename_var.set(filename)
                 self.parent_dir_var.set(parent_dir)
                 self.grandparent_dir_var.set(grandparent_dir)
+
+                filename_guess = os.path.join(os.path.dirname(self.filepath), os.path.splitext(filename)[0] + "_annotations.json")
+                try:
+                    self.load_annotations(filename_guess)
+                except:
+                    messagebox.showerror("Note:", f"Could not find prior annotations. \n Looked for {filename_guess}")
+
                 
             except Exception as e:
                 messagebox.showerror("Error", f"Error opening PDF: {e}")
@@ -719,12 +738,16 @@ class PDFAnnotator:
         if not self.polygon_dict:
             messagebox.showinfo("Info", "No annotations to save.")
             return
+
+        filename_guess = os.path.join(os.path.dirname(self.filepath), os.path.splitext(self.filepath)[0] + "_annotations.json")
             
         file_path = filedialog.asksaveasfilename(
             title="Save Annotations",
             defaultextension=".json",
-            filetypes=[("JSON Files", "*.json")]
-        )
+            filetypes=[("JSON files", "*.json")],
+            initialfile= filename_guess
+            )
+
         if file_path:
             try:
                 with open(file_path, 'w') as f:
@@ -733,11 +756,13 @@ class PDFAnnotator:
             except Exception as e:
                 messagebox.showerror("Error", f"Error saving annotations: {e}")
     
-    def load_annotations(self):
-        file_path = filedialog.askopenfilename(
-            title="Load Annotations",
-            filetypes=[("JSON Files", "*.json")]
-        )
+    def load_annotations(self, file_path=None):
+        if file_path == None:
+            file_path = filedialog.askopenfilename(
+                title="Load Annotations",
+                filetypes=[("JSON Files", "*.json")]
+                )
+
         if file_path:
             try:
                 with open(file_path, 'r') as f:
