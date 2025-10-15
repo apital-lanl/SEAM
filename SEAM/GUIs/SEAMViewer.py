@@ -761,8 +761,6 @@ class Landing_GUI:
             self.paned_window.add(self.left_panel, weight=1)
             self.paned_window.add(self.middle_panel, weight=2)
             self.paned_window.add(self.right_panel, weight=7)
-            
-            messagebox.showinfo("Expand Right Panel", "Right panel expanded")
 
     def summarize_data(self):
         messagebox.showinfo("Summarize Data", "Summarizing data")
