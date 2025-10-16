@@ -27,6 +27,7 @@ import json
 import math
 from SEAM.GUIs.AnnotatePDF import PDFAnnotator
 from SEAM.GUIs.AnnotateDefects import DefectAnnotator
+from SEAM.GUIs.ImageStitch import SEMMontageApp
 
 blank_tree_dict = {
     'projects': [],

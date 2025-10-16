@@ -20,17 +20,8 @@ Description:
 
 from Recipe import Recipe
 
-class Parsle:
-    ''' v0.0.1   created:2024-07-27   modified:2024-08-10
 
-    Custom parsing library to speed up complex activities for agent-based processing of data projects. 
-    
-    '''
-    
-    version = '0.0.1'
-    version_mod_date = '2024-08-10'
-
-    parsle_dict = {
+parsley_dict = {
         "all": {},          #
         "bake": {},
         "dostart": {},      
@@ -50,10 +41,21 @@ class Parsle:
         "store": {},
         "temp": {},
         }
+
+
+class Parsley
+    ''' v0.0.1   created:2024-07-27   modified:2024-08-10
+
+    Custom parsing library to speed up complex activities for agent-based processing of data projects. 
+    
+    '''
+    
+    version = '0.0.1'
+    version_mod_date = '2024-08-10'
     
 
     @staticmethod
-    def read_parsle(text_block):
+    def read_parsley(text_block):
         ''' v0.1.0   created:2024-07-16   modified:2024-07-16
     
         Take a 'parsle' type block instruction and turn it into usable code.

@@ -268,7 +268,7 @@ class Project:
     def create_seami_file(new_filename = '', open_filename_dialog= True):
         ''' v0.1.0   created:2024-07-11   modified:2024-07-11 
     
-        Make a direct copy of .seam root repository to a new location. If 
+        Make a SEAM instance file and return a configuration dictionary.
         
         INPUT:   lorem 
         ACTION:  lorem
@@ -521,25 +521,22 @@ class Process:
         pass
     
     
-    @staticmethod
-    def func_temp():
-        ''' v0.1.0   created:2024-   modified:2024-
-    
-        Description
-        
-        INPUT:   lorem 
-        ACTION:  lorem
-        OUTPUT:  lorem
-        
-        '''
-        pass
-    
-    
-    
 class Specs:
     ''' v0.0.1   created:2024-08-14   modified:2024-08-14
     Utility class for parsing, creating, and maintaining .specs (SPECIFICATIONS) files
     '''
+
+    blank_specs_dict = {
+        'info': {
+            'name': '',
+            'version': '',
+            'date_created': '',
+            'date_modified': ''
+            },
+        'recipe_filenames':[],
+        'recipe_specifications':{},
+        'child_data':{},
+        }
     
     @staticmethod
     def find(directory):
@@ -554,29 +551,20 @@ class Specs:
                   trial_files.append(os.path.join(root, filename))
     
     
-    @staticmethod
-    def func_temp():
-        ''' v0.1.0   created:2024-   modified:2024-
-    
-        Description
-        
-        INPUT:   lorem 
-        ACTION:  lorem
-        OUTPUT:  lorem
-        
-        '''
-        pass
+
     
     
     
 class Utilities:
     ''' v0.0.1   created:2024-08-14   modified:2024-10-18
-    Utility class for parsing, creating, and maintaining .specs (SPECIFICATIONS) files
+
     '''
     
     @staticmethod
     def checkfile(path):
         """
+        If file exists, add an increment number if none exists and increment existing iteration numbers.
+
         Taken verbatim from:
         https://stackoverflow.com/questions/29682971/auto-increment-file-name-python
         """
@@ -598,7 +586,7 @@ class Utilities:
     
     @staticmethod
     def create_temp_seam_directory(root_dir, ok_exist_mode = False):
-        
+        v
         ''' v0.1.1   created:2024-06-19   modified:2024-06-19
         
         Generate the SEAM backend repository structure.

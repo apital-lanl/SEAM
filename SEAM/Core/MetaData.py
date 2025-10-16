@@ -279,8 +279,9 @@ class Meta:
         
         ''' v0.1.0     created 2024-08-16     modified: 2024-08-16
         
-        Process a meta_dict to de-fuzz entries for filenames that should actually be identical.
-        Smart merging of "directory1//filename" & "directory2//filename" when directories are equivalent.
+        Walk a directory, collect SEAM filepaths, and process all filenames at the lowest level for meta_dict entries.
+        I.e. if a file isn't in the meta_dict, add it with basic info.
+
         '''
         
         #Get directory if none defined
