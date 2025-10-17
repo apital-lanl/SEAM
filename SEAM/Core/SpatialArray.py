@@ -83,7 +83,7 @@ class SH2D:
 
     
     # Take 'level_sizes' and generate 'level_edges' starting from top-left 0-0; dimensions in meters
-    def pixeLSize_to_level(self):
+    def pixel_size_to_level(self):
         size_dict = self.level_sizes
         print(size_dict)
     
@@ -117,10 +117,7 @@ class SH2D:
         """ v0.0    created: 2024-09-01    modified: 2024-09-24
         Description
         """
-    
-    
-    
-    
+   
     
 class Sample:
     
@@ -130,7 +127,7 @@ class Sample:
     
     version = '0.1.0'
     version_mod_date = '2024-09-14'
-    frame_blank = {
+    default_zeroLevel_size = {
         'zero_size': 0.333333   # 1/3 of a meter
         }
     

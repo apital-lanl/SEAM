@@ -43,7 +43,7 @@ from operator import itemgetter
 ###    Variables   ###############################################################################
 ##################################################################################################
 
-gas_properties_dict = {
+blank_gas_properties_dict = {
     'Xx': {
         'long_name': 'Gas',
         'nominal_mass': 0,
@@ -397,14 +397,8 @@ class Parapress:
             plt.show()
         
         return clean_df
-    
-    
-    def process(self, data_df, graph=False, gas_species_dict ={}):
-        pass
-
         
     ###    Utilities   ###########################################################################
-        
         
     @staticmethod
     def dict_from_filenames(filenames, channels=[]):
@@ -607,7 +601,7 @@ class Utilities:
     date_modified = '2024-10-17'
 
     @staticmethod
-    def process(input_data):
+    def preprocess(input_data):
         
         if by_date:
             pass

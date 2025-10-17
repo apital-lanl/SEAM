@@ -119,7 +119,7 @@ class XPS:
     Wrapper class for static methods (currently; may change in future) related to parsing spectra.
     '''
     
-    default_dict = {
+    default_spot_dict = {
         'spot_size': 400,   #in microns
         'spot_profile': 'gaussian, broad'
         }
@@ -131,6 +131,7 @@ class XPS:
         
         }
     
+    @staticmethod
     def load(files='', mode='', option_dict = load_option_dict):
 
         if len(files) > 0:
