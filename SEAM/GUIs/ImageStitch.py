@@ -6,17 +6,30 @@ Modified: 2025-09-25
 
 Description: 80% vibe-coded GUI for running SEM stitching montage
 """
+# SEAM modules
+from SEAM.Core.MetaClass import Project
+from SEAM.Analysis.ImageAnalysis import SEM, Keyence
+
+# Python-native libraries
 import tkinter as tk
 from tkinter import ttk, filedialog, messagebox
 import os
 import random  # For demonstration purposes
 from PIL import Image, ImageTk
+import traceback
+import matplotlib.pyplot as plt
+
 
 class SEMMontageApp:
     def __init__(self, root):
         self.root = root
         self.root.title("SEM Montage")
         self.root.geometry("1200x800")
+        
+        # Initialize variables for stitch options
+        self.homography_algorithms = []
+        self.alternate_save_location = ''
+        self.dumb_stitch = True
         
         # Create main frame
         self.main_frame = ttk.Frame(self.root)
@@ -25,16 +38,27 @@ class SEMMontageApp:
         # Create menu
         self.create_menu()
         
-        # Create left control panel and right canvas
-        self.left_panel = ttk.Frame(self.main_frame, width=400)
-        self.left_panel.pack(side=tk.LEFT, fill=tk.BOTH, padx=5, pady=5)
+        # Create PanedWindow to allow resizing
+        self.paned_window = ttk.PanedWindow(self.main_frame, orient=tk.HORIZONTAL)
+        self.paned_window.pack(fill=tk.BOTH, expand=True)
         
-        self.right_panel = ttk.Frame(self.main_frame)
-        self.right_panel.pack(side=tk.RIGHT, fill=tk.BOTH, expand=True, padx=5, pady=5)
+        # Create left control panel and right canvas
+        self.left_panel = ttk.Frame(self.paned_window)
+        self.right_panel = ttk.Frame(self.paned_window)
+        
+        # Add panels to the paned window
+        self.paned_window.add(self.left_panel, weight=1)
+        self.paned_window.add(self.right_panel, weight=3)
         
         # Canvas for displaying images
         self.canvas = tk.Canvas(self.right_panel, bg="black")
         self.canvas.pack(fill=tk.BOTH, expand=True)
+        
+        # Create alternate save location section at the top
+        self.create_alternate_save_location_section()
+        
+        # Create stitch options section
+        self.create_stitch_options_section()
         
         # Create control sections
         self.create_images_to_stitch_section()
@@ -43,10 +67,78 @@ class SEMMontageApp:
         
         # Dictionary to store image collections
         self.image_collections = {}
+        self.collection_stitch_type = {}
         
         # Track collection status
         self.collection_status = {}  # 'pending', 'in_progress', 'completed'
         
+    def create_alternate_save_location_section(self):
+        # Alternate save location section
+        save_frame = ttk.Frame(self.left_panel)
+        save_frame.pack(fill=tk.X, padx=5, pady=5)
+        
+        ttk.Label(save_frame, text="Alternate save location:").pack(anchor=tk.W)
+        
+        # Create a frame for the textbox and button
+        input_frame = ttk.Frame(save_frame)
+        input_frame.pack(fill=tk.X, expand=True)
+        
+        # Create the textbox
+        self.save_location_var = tk.StringVar()
+        self.save_location_entry = ttk.Entry(input_frame, textvariable=self.save_location_var)
+        self.save_location_entry.pack(side=tk.LEFT, fill=tk.X, expand=True, padx=(0, 5))
+        
+        # Bind click event to the textbox
+        self.save_location_entry.bind("<Button-1>", self.select_save_location)
+        
+        # Add a browse button
+        browse_btn = ttk.Button(input_frame, text="Browse", command=self.select_save_location)
+        browse_btn.pack(side=tk.RIGHT)
+    
+    def select_save_location(self, event=None):
+        """Open directory dialog to select alternate save location"""
+        directory = filedialog.askdirectory(title="Select Alternate Save Location")
+        if directory:
+            self.alternate_save_location = directory
+            self.save_location_var.set(directory)
+    
+    def create_stitch_options_section(self):
+        # Stitch Options section
+        self.options_frame = ttk.LabelFrame(self.left_panel, text="Stitch Options")
+        self.options_frame.pack(fill=tk.X, padx=5, pady=5)
+        
+        # Create algorithm selection checkboxes
+        self.sift_var = tk.BooleanVar()
+        self.surf_var = tk.BooleanVar()
+        self.akaze_var = tk.BooleanVar()
+        self.orb_var = tk.BooleanVar()
+        
+        # Add checkboxes
+        ttk.Checkbutton(self.options_frame, text="SIFT", variable=self.sift_var, 
+                       command=self.update_algorithms).pack(anchor=tk.W, padx=5, pady=2)
+        ttk.Checkbutton(self.options_frame, text="SURF", variable=self.surf_var,
+                       command=self.update_algorithms).pack(anchor=tk.W, padx=5, pady=2)
+        ttk.Checkbutton(self.options_frame, text="AKAZE", variable=self.akaze_var,
+                       command=self.update_algorithms).pack(anchor=tk.W, padx=5, pady=2)
+        ttk.Checkbutton(self.options_frame, text="ORB", variable=self.orb_var,
+                       command=self.update_algorithms).pack(anchor=tk.W, padx=5, pady=2)
+    
+    def update_algorithms(self):
+        """Update the homography algorithms list based on checkbox selection"""
+        self.homography_algorithms = []
+        
+        if self.sift_var.get():
+            self.homography_algorithms.append("SIFT")
+        if self.surf_var.get():
+            self.homography_algorithms.append("SURF")
+        if self.akaze_var.get():
+            self.homography_algorithms.append("AKAZE")
+        if self.orb_var.get():
+            self.homography_algorithms.append("ORB")
+        
+        # Update dumb_stitch based on algorithm selection
+        self.dumb_stitch = len(self.homography_algorithms) == 0
+    
     def create_menu(self):
         menubar = tk.Menu(self.root)
         
@@ -115,7 +207,7 @@ class SEMMontageApp:
         size_frame = ttk.Frame(list_frame)
         size_frame.pack(side=tk.LEFT, fill=tk.BOTH)
         
-        ttk.Label(size_frame, text="Size").pack(anchor=tk.W)
+        ttk.Label(size_frame, text="Number of Files").pack(anchor=tk.W)
         
         self.size_scrollbar = ttk.Scrollbar(size_frame)
         self.size_scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
@@ -168,33 +260,40 @@ class SEMMontageApp:
             return
             
         # Get all subdirectories as categories
-        categories = {}
+        directories = {}
         
         # First check for images in the main directory
-        main_dir_images = [f for f in os.listdir(directory) if os.path.isfile(os.path.join(directory, f)) and 
+        main_dir_images = [os.path.join(directory, f) for f in os.listdir(directory) if os.path.isfile(os.path.join(directory, f)) and 
                           f.lower().endswith(('.png', '.jpg', '.jpeg', '.tif', '.tiff'))]
         
         if main_dir_images:
-            categories["Main Directory"] = main_dir_images
+            directories["Main Directory"] = main_dir_images
         
         # Then check subdirectories
         for item in os.listdir(directory):
             item_path = os.path.join(directory, item)
             if os.path.isdir(item_path):
                 # Count image files in the subdirectory
-                image_files = [f for f in os.listdir(item_path) if os.path.isfile(os.path.join(item_path, f)) and 
+                image_files = [os.path.join(item_path, f) for f in os.listdir(item_path) if os.path.isfile(os.path.join(item_path, f)) and 
                               f.lower().endswith(('.png', '.jpg', '.jpeg', '.tif', '.tiff'))]
                 if image_files:
-                    categories[item] = image_files
+                    directories[item] = image_files
         
-        if not categories:
+        if not directories:
             messagebox.showinfo("No Images", "No image files found in the selected directory or its subdirectories.")
             return
             
         # Add to collections dictionary
-        collection_name = os.path.basename(directory)
-        self.image_collections[collection_name] = categories
-        self.collection_status[collection_name] = 'pending'
+        for dir_key in list(directories.keys()):
+            # Return a dict with categories split by filename parsing
+            sub_category_dict = self.parse_filepaths_for_image_type(directories[dir_key])
+
+            for cat_key in list(sub_category_dict.keys()):
+                this_cat_dict = sub_category_dict[cat_key]
+                collection_name = cat_key
+                self.image_collections[collection_name] = this_cat_dict['filepaths']
+                self.collection_stitch_type[collection_name] = this_cat_dict['stitch_type']
+                self.collection_status[collection_name] = 'pending'
         
         # Update listboxes
         self.update_collections_listbox()
@@ -212,19 +311,25 @@ class SEMMontageApp:
             return
             
         # Group files by their parent directory
-        categories = {}
+        directories = {}
         for file_path in files:
             parent_dir = os.path.basename(os.path.dirname(file_path))
-            file_name = os.path.basename(file_path)
             
-            if parent_dir not in categories:
-                categories[parent_dir] = []
-            categories[parent_dir].append(file_name)
+            if parent_dir not in directories:
+                directories[parent_dir] = []
+            directories[parent_dir].append(file_path)
         
         # Add to collections dictionary
-        collection_name = f"Files Selection ({len(files)} files)"
-        self.image_collections[collection_name] = categories
-        self.collection_status[collection_name] = 'pending'
+        for dir_key in list(directories.keys()):
+            # Return a dict with categories split by filename parsing
+            sub_category_dict = self.parse_filepaths_for_image_type(directories[dir_key])
+
+            for cat_key in list(sub_category_dict.keys()):
+                this_cat_dict = sub_category_dict[cat_key]
+                collection_name = f"{cat_key}"
+                self.image_collections[collection_name] = this_cat_dict['filepaths']
+                self.collection_stitch_type[collection_name] = this_cat_dict['stitch_type']
+                self.collection_status[collection_name] = 'pending'
         
         # Update listboxes
         self.update_collections_listbox()
@@ -233,7 +338,63 @@ class SEMMontageApp:
         last_index = self.collections_listbox.size() - 1
         self.collections_listbox.selection_set(last_index)
         self.collections_listbox.see(last_index)  # Ensure it's visible
-    
+
+    def parse_filepaths_for_image_type(self, filepaths):
+        """
+        Specifically look for '_SE_' or '_BED-' flags from JEOL.
+        TODO:
+            - Add flags for other image stitching types
+        """
+
+        # Dict with each level 0 key as a common expression flagging a category of image
+        flagged_type_names = {
+            '_BED-':{
+                'type_name': "JEOL,SEM,Backscatter",
+                'short_type_name': "BD",
+                'stitch_type': "JEOL,SEM"
+                },
+            '_SED':{
+                'type_name': "JEOL,SEM,Secondary Electron",
+                'short_type_name': "SE",
+                'stitch_type': "JEOL,SEM"
+                }
+            }
+        excluded_monikers = ["Mon"]
+
+        # Initialize variables and clean input
+        type_dict = {}
+
+        if isinstance(filepaths, list):
+            # Create list of regex names to check from keys of 'flagged_type_names'
+            expressions = list(flagged_type_names.keys())
+
+            # Parse each filename and check for category membership
+            for filepath in filepaths:
+                filename = os.path.basename(filepath)
+                parent_directory = os.path.basename(os.path.dirname(filepath))
+
+                for expression in expressions:
+                    if expression in filename:
+                        # Split the filename by the expression to unique front moniker
+                        split_names = filename.split(expression)
+                        # TODO: make use of the rest of the filename for better parsing
+                        moniker = split_names[0]
+                        display_name = f"[{parent_directory}]-[{expression}]-[{moniker}]"
+                        
+                        # Add to or update dict with filename and moniker
+                        if display_name in type_dict:
+                            type_dict[display_name]['filepaths'].append(filepath)
+                        elif moniker not in excluded_monikers:
+                            type_dict[display_name] = {
+                                'filepaths': [filepath],
+                                'moniker': moniker,
+                                'type_name': flagged_type_names[expression]['type_name'],
+                                'short_type_name': flagged_type_names[expression]['short_type_name'],
+                                'stitch_type': flagged_type_names[expression]['stitch_type']
+                            }
+        
+        return type_dict
+             
     def update_collections_listbox(self):
         """Update the Collections and Size listboxes"""
         self.collections_listbox.delete(0, tk.END)
@@ -243,7 +404,7 @@ class SEMMontageApp:
             self.collections_listbox.insert(tk.END, collection_name)
             
             # Calculate total number of files in this collection
-            total_files = sum(len(files) for files in self.image_collections[collection_name].values())
+            total_files = len(self.image_collections[collection_name])
             self.size_listbox.insert(tk.END, str(total_files))
             
             # Apply styling based on status
@@ -272,6 +433,8 @@ class SEMMontageApp:
                 del self.image_collections[collection_name]
             if collection_name in self.collection_status:
                 del self.collection_status[collection_name]
+            if collection_name in self.collection_stitch_type:
+                del self.collection_stitch_type[collection_name]
         
         # Update listboxes
         self.update_collections_listbox()
@@ -296,19 +459,133 @@ class SEMMontageApp:
                 self.root.update()
                 
                 # Process each category in the collection
-                categories = self.image_collections[collection_name]
-                total_steps = len(categories)
-                
-                for step, (category, files) in enumerate(categories.items()):
-                    # Update progress
-                    progress = (step / total_steps) * 100
-                    self.progress_bar['value'] = progress
-                    self.task_label.config(text=f"Processing: {collection_name} - {category}")
-                    self.root.update()
+                file_list = self.image_collections[collection_name]
+
+                arg_dict = {
+                    'guess_and_check': False, 
+                    'show_guess_checking': False,
+                    'show_matchpics': False,
+                    'show_match_scatter': False,
+                    'user_input': False,
+                    'overright_GFA': True,
+                    'algo': 'dumb',
+                    'update_metadict': True,
+                    'alternate_save_loaction': self.alternate_save_location,
+                    'shift_dict': {},
+                    'global_manual_shift': {
+                        'manual_x_shift': 0,
+                        'manual_y_shift': 0
+                    },
+                    'average_error_threshold': 50
+                }
+    
+                try:
+                    if self.dumb_stitch:
+                        algorithm = 'dumb'
+            
+                        GFA = SEM.spatial_stitch(file_list, 
+                                        guess_and_check=arg_dict['guess_and_check'],
+                                        overright_GFA=arg_dict['overright_GFA'],
+                                        update_metadict=arg_dict['update_metadict'],
+                                        save_alternate_location=arg_dict['alternate_save_loaction'],
+                                        shift_dict=arg_dict['shift_dict'],
+                                        global_manual_shift=arg_dict['global_manual_shift'],
+                                        )
+            
+                        interim_prcs_dict = {
+                            'name': 'SEM stitch',
+                            'status': 'completed',
+                            'input_dict': arg_dict,
+                            'files': file_list
+                        }
+            
+                    else:
+                        if len(self.homography_algorithms) > 0:
+                            for algorithm in self.homography_algorithms:
+                                arg_dict['algo'] = algorithm
                     
-                    # Simulate processing time
-                    self.root.after(500)  # 500ms delay to simulate processing
+                                GFA = SEM.homography_stitch(file_list, 
+                                                guess_and_check=arg_dict['guess_and_check'],
+                                                show_guess_checking=arg_dict['show_guess_checking'],
+                                                show_matchpics=arg_dict['show_matchpics'],
+                                                show_match_scatter=arg_dict['show_match_scatter'],
+                                                user_input=arg_dict['user_input'],
+                                                overright_GFA=arg_dict['overright_GFA'],
+                                                algo=arg_dict['algo'],
+                                                update_metadict=arg_dict['update_metadict'],
+                                                save_alternate_location=arg_dict['alternate_save_loaction'],
+                                                shift_dict=arg_dict['shift_dict'],
+                                                global_manual_shift=arg_dict['global_manual_shift'],
+                                                average_error_threshold=arg_dict['average_error_threshold'],
+                                                )
+                    
+                                interim_prcs_dict = {
+                                    'name': 'SEM stitch',
+                                    'status': 'completed',
+                                    'input_dict': arg_dict,
+                                    'files': file_list
+                                }
+            
+                        else:
+                            algorithm = 'SIFT'
+                            arg_dict['algo'] = algorithm
                 
+                            GFA = SEM.homography_stitch(file_list, 
+                                            guess_and_check=arg_dict['guess_and_check'],
+                                            show_guess_checking=arg_dict['show_guess_checking'],
+                                            show_matchpics=arg_dict['show_matchpics'],
+                                            show_match_scatter=arg_dict['show_match_scatter'],
+                                            user_input=arg_dict['user_input'],
+                                            overright_GFA=arg_dict['overright_GFA'],
+                                            algo=arg_dict['algo'],
+                                            update_metadict=arg_dict['update_metadict'],
+                                            save_alternate_location=arg_dict['alternate_save_loaction'],
+                                            shift_dict=arg_dict['shift_dict'],
+                                            global_manual_shift=arg_dict['global_manual_shift'],
+                                            average_error_threshold=arg_dict['average_error_threshold'],
+                                            )
+                
+                            interim_prcs_dict = {
+                                'name': 'SEM stitch',
+                                'status': 'completed',
+                                'input_dict': arg_dict,
+                                'files': file_list
+                            }
+
+ 
+                    plt.imshow(GFA)
+                    plt.title(f"Failed GFA- {savename}")
+                    plt.savefig(savename)
+                    plt.show()
+                
+                except Exception as exc:
+                    print(f"Failed on {algorithm} algorithm")
+                    print(traceback.format_exc())
+                    print()
+        
+                    interim_prcs_dict = {
+                        'name': 'SEM stitch',
+                        'status': 'failed',
+                        'error_trace': traceback.format_exc(),
+                        'input_dict': arg_dict,
+                        'files': file_list
+                    }
+
+        
+                    print(f"Failed on {algorithm} algorithm")
+                    print()
+
+                    #Dump the failure to an interim process file
+                    basename_list = os.path.basename(file_list[0]).split('_')[0:-2]
+                    trial_types = []
+                    for part in basename_list:
+                        if ('BED' in part) or ('SED' in part):
+                            trial_types.append(part)
+                    dirname = os.path.dirname(os.path.dirname(file_list[0]))
+                    savename = os.path.join(dirname, str(trial_types[0] + '-FailedGFA.png'))
+
+                    Project.interim_process_dump(interim_prcs_dict)
+
                 # Complete this collection
                 self.progress_bar['value'] = 100
                 self.root.update()
@@ -318,7 +595,7 @@ class SEMMontageApp:
                 self.update_collections_listbox()
                 
                 # Add completion summary to the Completed listbox
-                summary = f"Completed: {collection_name} - {len(categories)} categories, {sum(len(files) for files in categories.values())} files"
+                summary = f"Completed: {collection_name} - {len(file_list)} images"
                 self.completed_listbox.insert(0, summary)
                 
                 # Display a final image (simulated)
