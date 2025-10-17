@@ -26,8 +26,8 @@ import shutil
 import errno
   
   #import other SEAM modules
-from Core.TypeHash import Fingerprint
-from Core.MetaData import Meta
+from SEAM.Core.TypeHash import Fingerprint
+from SEAM.Core.MetaData.Meta import walk_directory
 
 
    #    SEAM variables   ##########################################################################
@@ -135,60 +135,12 @@ class Project:
             '':''
             }
 
-    
     def create_seam_directory(self, root_dir, ok_exist_mode = False):
-        
-        ''' v0.1.1   created:2024-06-19
-        
-        Generate the SEAM backend repository structure.
-        
-        '''
+        """
+        Changed to point to Utilities version for better staticmethod handline
+        """
 
-        #Generate directories
-        os.makedirs(root_dir, exist_ok = ok_exist_mode)
-                    
-        self.metadict_root_directory = os.path.join(root_dir, "meta_dicts")
-        os.makedirs(self.metadict_root_directory, exist_ok = ok_exist_mode)
-        
-        self.recipes_root_directory = os.path.join(root_dir, "Recipes")
-        os.makedirs(self.recipes_root_directory, exist_ok = ok_exist_mode)
-        
-        self.projects_root_directory = os.path.join(root_dir, "Projects")
-        os.makedirs(self.projects_root_directory, exist_ok = ok_exist_mode)
-
-        self.typehash_root_directory = os.path.join(root_dir, "TypeHashes")
-        os.makedirs(self.typehash_root_directory, exist_ok = ok_exist_mode)
-
-        self.data_root_directory = os.path.join(root_dir, "Data")
-        os.makedirs(self.data_root_directory, exist_ok = ok_exist_mode)
-
-        self.template_root_directory = os.path.join(root_dir, "Templates")
-        os.makedirs(self.template_root_directory, exist_ok = ok_exist_mode)
-        
-        self.log_root_directory = os.path.join(root_dir, "Logs")
-        os.makedirs(self.log_root_directory, exist_ok = ok_exist_mode)
-        
-        self.label_root_directory = os.path.join(root_dir, "Labels")
-        os.makedirs(self.label_root_directory, exist_ok = ok_exist_mode)
-        
-        self.links_root_directory = os.path.join(root_dir, "Links")
-        os.makedirs(self.links_root_directory, exist_ok = ok_exist_mode)
-        
-        self.objects_root_directory = os.path.join(root_dir, "Objects")
-        os.makedirs(self.objects_root_directory, exist_ok = ok_exist_mode)
-        
-
-        #Create generic config file 
-        config_dict = {
-            'primary_root': root_dir,
-            'secondary_roots':[],
-            'log_folder': self.log_root_directory
-            }
-        
-        config_filepath = os.path.join(root_dir, 'seam_config.json')
-        
-        with open(config_filepath, 'w', encoding='utf-8') as file:
-            json.dump(config_dict, file, ensure_ascii=False, indent=4)
+        Utilities.create_temp_seam_directory(root_dir, ok_exist_mode)
     
     
     def load(self, filename, input_dict = {}, *args):
@@ -256,7 +208,7 @@ class Project:
         '''
 
         #Walk the directory and make sure each file has a 'meta_dict'; reasonably fast if the directory is < ~1 Gb
-        metawalk_output_dict = Meta.walk_directory(filepath= directory, seam_root= seam_root)
+        metawalk_output_dict = walk_directory(filepath= directory, seam_root= seam_root)
         
         
     
@@ -550,10 +502,7 @@ class Specs:
                if '.specs' in split_name[-1].lower():
                   trial_files.append(os.path.join(root, filename))
     
-    
 
-    
-    
     
 class Utilities:
     ''' v0.0.1   created:2024-08-14   modified:2024-10-18
@@ -586,55 +535,52 @@ class Utilities:
     
     @staticmethod
     def create_temp_seam_directory(root_dir, ok_exist_mode = False):
-        v
-        ''' v0.1.1   created:2024-06-19   modified:2024-06-19
+        
+        ''' v0.1.1   created:2024-06-19
         
         Generate the SEAM backend repository structure.
         
         '''
-        new_temp_seam = os.path.join(root_dir, '.seam')
 
         #Generate directories
-        os.makedirs(new_temp_seam, exist_ok = ok_exist_mode)
+        os.makedirs(root_dir, exist_ok = ok_exist_mode)
                     
-        temp_metadict_root_directory = os.path.join(root_dir, "meta_dicts")
-        os.makedirs(temp_metadict_root_directory, exist_ok = ok_exist_mode)
+        metadict_root_directory = os.path.join(root_dir, "meta_dicts")
+        os.makedirs(metadict_root_directory, exist_ok = ok_exist_mode)
         
-        temp_recipes_root_directory = os.path.join(root_dir, "Recipes")
-        os.makedirs(temp_recipes_root_directory, exist_ok = ok_exist_mode)
-        os.makedirs(os.path.join(temp_recipes_root_directory, "Group Events"), exist_ok = ok_exist_mode)
-        os.makedirs(os.path.join(temp_recipes_root_directory, "Objects"), exist_ok = ok_exist_mode)
-        os.makedirs(os.path.join(temp_recipes_root_directory, "Processes"), exist_ok = ok_exist_mode)
-        os.makedirs(os.path.join(temp_recipes_root_directory, "Environments"), exist_ok = ok_exist_mode)
-        os.makedirs(os.path.join(temp_recipes_root_directory, "Filetypes"), exist_ok = ok_exist_mode)
+        recipes_root_directory = os.path.join(root_dir, "Recipes")
+        os.makedirs(recipes_root_directory, exist_ok = ok_exist_mode)
         
-        os.makedirs(os.path.join(temp_recipes_root_directory, "Perspectives"), exist_ok = ok_exist_mode)
-        os.makedirs(os.path.join(temp_recipes_root_directory, "Perspectives", "Samples"), exist_ok = ok_exist_mode)
-        os.makedirs(os.path.join(temp_recipes_root_directory, "Perspectives", "Projects"), exist_ok = ok_exist_mode)
-        os.makedirs(os.path.join(temp_recipes_root_directory, "Perspectives", "Timelines"), exist_ok = ok_exist_mode)
-        
-        temp_typehash_root_directory = os.path.join(root_dir, "TypeHashes")
-        os.makedirs(temp_typehash_root_directory, exist_ok = ok_exist_mode)
+        projects_root_directory = os.path.join(root_dir, "Projects")
+        os.makedirs(projects_root_directory, exist_ok = ok_exist_mode)
 
-        temp_event_root_directory = os.path.join(root_dir, "Events")
-        os.makedirs(temp_event_root_directory, exist_ok = ok_exist_mode)
-        os.makedirs(os.path.join(temp_event_root_directory, "Proposed"), exist_ok = ok_exist_mode)
-        os.makedirs(os.path.join(temp_event_root_directory, "History"), exist_ok = ok_exist_mode)
+        typehash_root_directory = os.path.join(root_dir, "TypeHashes")
+        os.makedirs(typehash_root_directory, exist_ok = ok_exist_mode)
 
-        temp_event_root_directory = os.path.join(root_dir, "Data")
-        os.makedirs(temp_event_root_directory, exist_ok = ok_exist_mode)
+        data_root_directory = os.path.join(root_dir, "Data")
+        os.makedirs(data_root_directory, exist_ok = ok_exist_mode)
 
-        temp_template_root_directory = os.path.join(root_dir, "Templates")
-        os.makedirs(temp_template_root_directory, exist_ok = ok_exist_mode)
+        template_root_directory = os.path.join(root_dir, "Templates")
+        os.makedirs(template_root_directory, exist_ok = ok_exist_mode)
         
-        temp_log_root_directory = os.path.join(root_dir, "logs")
-        os.makedirs(temp_log_root_directory, exist_ok = ok_exist_mode)
+        log_root_directory = os.path.join(root_dir, "Logs")
+        os.makedirs(log_root_directory, exist_ok = ok_exist_mode)
+        
+        label_root_directory = os.path.join(root_dir, "Labels")
+        os.makedirs(label_root_directory, exist_ok = ok_exist_mode)
+        
+        links_root_directory = os.path.join(root_dir, "Links")
+        os.makedirs(links_root_directory, exist_ok = ok_exist_mode)
+        
+        sobjects_root_directory = os.path.join(root_dir, "Objects")
+        os.makedirs(objects_root_directory, exist_ok = ok_exist_mode)
+        
 
         #Create generic config file 
         config_dict = {
-            'primary_root': new_temp_seam,
+            'primary_root': root_dir,
             'secondary_roots':[],
-            'log_folder': temp_log_root_directory
+            'log_folder': log_root_directory
             }
         
         config_filepath = os.path.join(root_dir, 'seam_config.json')

@@ -18,7 +18,8 @@ Description: Set of classes for handling SEM, laser profilometry
 
 """
 
-from MetaData import Meta
+from SEAM.Core.MetaData import Meta
+from SEAM.Dependencies import vk4extract
 
 import cv2
 import datetime
@@ -43,7 +44,7 @@ from skimage.measure import label, regionprops_table
 from sklearn.linear_model import LinearRegression
 from tqdm.auto import tqdm
 from tkinter import Tk, filedialog
-import vk4extract
+
     
 ##################################################################################################
 ###    Keyence     ###############################################################################
@@ -885,6 +886,8 @@ class SEM:
     version = '1.1.0'
     version_mod_date = '2025-07-01'
     
+    global GFA, gfa_x_edges, gfa_y_edges, GFA_dict
+
     homography_match_threshholds = [0.2, 0.4, 0.5, 0.6, 0.8]
     minimum_homography_matches = 5
     
@@ -1118,8 +1121,21 @@ class SEM:
                 tag_dict["HV"] = float(line.split(' ')[1]) *1000   #convert from kV to V
     
             elif "FIELD_OF_VIEW" in line:
-                img_hor_dim  = float(line.split(' ')[1].replace('mm', ''))/1000   #convert from mm to m
-                img_ver_dim  = float(line.split(' ')[2].replace('mm', ''))/1000   #convert from mm to m
+                hor_string = line.split(' ')[1]
+                if 'Â' in hor_string:
+                    hor_string = hor_string.replace('Â', '')
+                if 'mm' in hor_string:
+                    img_hor_dim  = float(hor_string.replace('mm', ''))/1000   #convert from mm to m
+                elif 'µm' in hor_string:
+                    img_hor_dim  = float(hor_string.replace('µm', ''))/1000000   #convert from mm to m
+                ver_string = line.split(' ')[2]
+                if 'Â' in ver_string:
+                    ver_string = ver_string.replace('Â', '')
+                if 'mm' in hor_string:
+                    img_ver_dim  = float(hor_string.replace('mm', ''))/1000   #convert from mm to m
+                elif 'µm' in hor_string:
+                    img_ver_dim  = float(hor_string.replace('µm', ''))/1000000   #convert from mm to m
+
                 tag_dict["HorizontalSize"] = img_hor_dim
                 tag_dict["VerticalSize"] = img_ver_dim
                 # Divide the field of view by the pixel number to get pixel height and width in real terms

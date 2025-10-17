@@ -18,7 +18,7 @@ Description:
 
 """
 
-from Recipe import Recipe
+from SEAM.Core.Recipe import Recipe
 
 
 parsley_dict = {

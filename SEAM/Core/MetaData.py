@@ -23,7 +23,7 @@ import os
 from pathlib import Path
 from tkinter import Tk, filedialog
 
-from TypeHash import Fingerprint
+from SEAM.Core.TypeHash import Fingerprint
 
 #TODO: alter to handle filename clash better
 #   - Add 'clash' key to 'meta_dict'
@@ -208,7 +208,11 @@ class Meta:
             #If no root .seam defined, save to local repo by 'seam_config.json' data
             except:
                 #Find config file if main root doesn't exist
-                dump_dir = os.path.join(seam_config.working_directory, 'meta_dicts')
+                seam_config_path = Meta.look_for_seam_config(meta_filepath)
+                with open(seam_config_path, 'r') as file:
+                    seam_config = json.load(file)
+
+                dump_dir = os.path.join(seam_config['primary_root'], 'meta_dicts')
                 trial_filepath = os.path.join(dump_dir, meta_filename_str)
                 
                 with open(trial_filepath, 'w') as file:
@@ -224,6 +228,60 @@ class Meta:
             meta_dict_index.update( {this_filename : meta_filepath} )
         
         return meta_dict_index, status
+
+
+    @staticmethod
+    def look_for_seam_config(data_filepath):
+        """
+        Lightweight implementation to add a quick .seam directory if none exists.
+        """
+
+        #Look two directories up for a .seam
+        grandparent_directory_path = os.path.dirname(os.path.dirname(data_filepath))
+
+        #set flags for SEAM repositories
+        recipe_check = False
+        meta_check = False
+
+        # Check for SEAM root folder and get global
+        root_home = str(Path.home())
+ 
+        #Try to find a .seam repo 'near' the 'data_filepath'
+        trial_dirs = []
+        for root, dirs, files in os.walk(grandparent_directory_path, topdown=False):
+           for name in dirs:
+               if '.seam' in name.lower():
+                  trial_dirs.append(os.path.join(root, name))
+
+        # if no luck, go straight to the root
+        if len(trial_dirs) <1:
+            for root, dirs, files in os.walk(root_home, topdown=False):
+               for name in dirs:
+                   if '.seam' in name.lower():
+                      trial_dirs.append(os.path.join(root, name))
+
+        if len(trial_dirs) == 1:
+            seam_guess = trial_dirs[0]
+            
+            #Just check that one of the required directories exists and assume all else is groovy
+            meta_check = os.path.isdir(os.path.join(seam_guess, "meta_dicts"))
+            
+            if meta_check:
+                seam_root = os.path.join(seam_guess, ".seam") #set the global 'seam_root' as well
+            else:
+                Meta.create_seam_config(seam_guess)
+                seam_root = os.path.join(seam_guess, ".seam")
+        
+        elif len(trial_dirs) == 0:
+            folder_check = os.path.isdir(os.path.join(root_home, ".seam"))
+            if not folder_check:
+                Meta.create_seam_config(os.path.join(root_home, ".seam"))
+
+            #No matter what, this is the 'seam_root' if no other was found
+            seam_root = os.path.join(root_home, ".seam")
+            config_root = os.path.join(seam_root, 'seam_config.json')
+
+        return config_root
     
     
     @staticmethod
@@ -347,6 +405,32 @@ class Meta:
         print(f"Finished with {update_count} updates to 'meta_dict_index'")
         
         return output_dict
+
+
+    @staticmethod
+    def create_seam_config(root_dir, ok_exist_mode = False):
+        
+        '''
+        Generate a limited SEAM backend repository structure.
+        '''
+
+        #Generate directories
+        os.makedirs(root_dir, exist_ok = ok_exist_mode)
+
+        log_root_directory = os.path.join(root_dir, "Logs")
+        os.makedirs(log_root_directory, exist_ok = ok_exist_mode)
+
+        #Create generic config file 
+        config_dict = {
+            'primary_root': root_dir,
+            'secondary_roots':[],
+            'log_folder': log_root_directory
+            }
+        
+        config_filepath = os.path.join(root_dir, 'seam_config.json')
+        
+        with open(config_filepath, 'w', encoding='utf-8') as file:
+            json.dump(config_dict, file, ensure_ascii=False, indent=4)
 
     
     
