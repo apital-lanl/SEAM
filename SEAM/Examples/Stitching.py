@@ -2,8 +2,8 @@
 #%%  SEM image stitching (2025-02-11)
 
  #SEAM modules
-from MetaClass import SEAM
-from ImageAnalysis import SEM, Keyence
+from Core.MetaClass import Project
+from Analysis.ImageAnalysis import SEM, Keyence
  #Python-native labraries
 from tkinter import Tk, filedialog
 import traceback
@@ -17,6 +17,7 @@ global GFA
 
 dumb_stitch = True
 other_save_location = r'Z:\SEM Stitched and Annotated Images\New Stitched Montages'   # 'GUI' '' or filepath
+algorithms_to_try = []
 if other_save_location == 'GUI':
     root = Tk()
     other_save_location = filedialog.askdirectory(title="Select an additional location to save stitch copies to.")
@@ -69,40 +70,78 @@ for index, file_list in enumerate(filename_lists[0::]):
     print(u'\t', "File ", index+1, ' of ', len(filename_lists))
     print(u'\t', os.path.dirname(file_list[0]))
     print()
-
-    # alog options:    'ORB'   'SURF'   'SIFT'   'AKAZE'
-    for algorithm in ['SIFT']:
-        try:
+    
+    arg_dict = {
+        'guess_and_check' : False, 
+        'show_guess_checking' : False,
+        'show_matchpics' : False,
+        'show_match_scatter': False,
+        'user_input' : False,
+        'overright_GFA': True,
+        'algo': 'dumb',
+        'update_metadict': True,
+        'alternate_save_loaction': other_save_location,
+        'shift_dict': {},
+        'global_manual_shift': {
+            'manual_x_shift': 0,
+            'manual_y_shift': 0
+            },
+        'average_error_threshold': 50
+        }
+    
+    try:
+        if dumb_stitch:
+            algorithm = 'dumb'
             
-            arg_dict = {
-                'guess_and_check' : False, 
-                'show_guess_checking' : False,
-                'show_matchpics' : False,
-                'show_match_scatter': False,
-                'user_input' : False,
-                'overright_GFA': True,
-                'algo': algorithm,
-                'update_metadict': True,
-                'alternate_save_loaction': other_save_location,
-                'shift_dict': {},
-                'global_manual_shift': {
-                    'manual_x_shift': 0,
-                    'manual_y_shift': 0
-                    },
-                'average_error_threshold': 50
+            GFA= SEM.spatial_stitch(file_list, 
+                            guess_and_check = arg_dict['guess_and_check'],
+                            overright_GFA = arg_dict['overright_GFA'],
+                            update_metadict= arg_dict['update_metadict'],
+                            save_alternate_location = arg_dict['alternate_save_loaction'],
+                            shift_dict = arg_dict['shift_dict'],
+                            global_manual_shift = arg_dict['global_manual_shift'],
+                              )
+            
+            interim_prcs_dict = {
+                'name': 'SEM stitch',
+                'status': 'completed',
+                'input_dict': arg_dict,
+                'files':file_list
                 }
             
-            if dumb_stitch:
-                SEM.spatial_stitch(file_list, 
-                                guess_and_check = arg_dict['guess_and_check'],
-                                overright_GFA = arg_dict['overright_GFA'],
-                                update_metadict= arg_dict['update_metadict'],
-                                save_alternate_location = arg_dict['alternate_save_loaction'],
-                                shift_dict = arg_dict['shift_dict'],
-                                global_manual_shift = arg_dict['global_manual_shift'],
-                                  )
+        else:
+            if len(algorithms_to_try) > 0:
+                for algorithm in algorithms_to_try:
+                    
+                    arg_dict['algo']= algorithm
+                    
+                    GFA= SEM.homography_stitch(file_list, 
+                                    guess_and_check = arg_dict['guess_and_check'],
+                                    show_guess_checking = arg_dict['show_guess_checking'],
+                                    show_matchpics = arg_dict['show_matchpics'],
+                                    show_match_scatter = arg_dict['show_match_scatter'],
+                                    user_input = arg_dict['user_input'],
+                                    overright_GFA = arg_dict['overright_GFA'],
+                                    algo = arg_dict['algo'],
+                                    update_metadict= arg_dict['update_metadict'],
+                                    save_alternate_location = arg_dict['alternate_save_loaction'],
+                                    shift_dict = arg_dict['shift_dict'],
+                                    global_manual_shift = arg_dict['global_manual_shift'],
+                                    average_error_threshold = arg_dict['average_error_threshold'],
+                                      )
+                    
+                    interim_prcs_dict = {
+                        'name': 'SEM stitch',
+                        'status': 'completed',
+                        'input_dict': arg_dict,
+                        'files':file_list
+                        }
+            
             else:
-                SEM.homography_stitch(file_list, 
+                algorithm = 'SIFT'
+                arg_dict['algo']= algorithm
+                
+                GFA= SEM.homography_stitch(file_list, 
                                 guess_and_check = arg_dict['guess_and_check'],
                                 show_guess_checking = arg_dict['show_guess_checking'],
                                 show_matchpics = arg_dict['show_matchpics'],
@@ -116,48 +155,45 @@ for index, file_list in enumerate(filename_lists[0::]):
                                 global_manual_shift = arg_dict['global_manual_shift'],
                                 average_error_threshold = arg_dict['average_error_threshold'],
                                   )
-            
-            interim_prcs_dict = {
-                'name': 'SEM stitch',
-                'status': 'completed',
-                'input_dict': arg_dict,
-                'files':file_list
-                }
-            
-            # SEAM.SEAM.interim_process_dump(interim_prcs_dict)
-            
-        except Exception as exc:
-            print(f"Failed on {algorithm} algorithm")
-            print(exc)
-            print()
-            
-            interim_prcs_dict = {
-                'name': 'SEM stitch',
-                'status': 'failed',
-                'error_trace': traceback.format_exc(),
-                'input_dict': arg_dict,
-                'files':file_list
-                }
+                
+                interim_prcs_dict = {
+                    'name': 'SEM stitch',
+                    'status': 'completed',
+                    'input_dict': arg_dict,
+                    'files':file_list
+                    }
+                
+    except Exception as exc:
+        print(f"Failed on {algorithm} algorithm")
+        print(exc)
+        print()
+        
+        interim_prcs_dict = {
+            'name': 'SEM stitch',
+            'status': 'failed',
+            'error_trace': traceback.format_exc(),
+            'input_dict': arg_dict,
+            'files':file_list
+            }
 
-            # SEAM.SEAM.interim_process_dump(interim_prcs_dict)
-            
-            basename_list = os.path.basename(file_list[0]).split('_')[0:-2]
-            trial_types = []
-            for part in basename_list:
-                if ('BED' in part) or ('SED' in part):
-                    trial_types.append(part)
-            dirname = os.path.dirname(os.path.dirname(file_list[0]))
-            savename = os.path.join(dirname, str(trial_types[0] + '-FailedGFA.png'))
-            
-            plt.imshow(GFA)
-            plt.title(f"Failed GFA- {basename}")
-            plt.savefig(savename)
-            plt.show()
-            
-            print(f"Failed on {algorithm} algorithm")
-            print()
-    
-            
+        Project.interim_process_dump(interim_prcs_dict)
+        
+        basename_list = os.path.basename(file_list[0]).split('_')[0:-2]
+        trial_types = []
+        for part in basename_list:
+            if ('BED' in part) or ('SED' in part):
+                trial_types.append(part)
+        dirname = os.path.dirname(os.path.dirname(file_list[0]))
+        savename = os.path.join(dirname, str(trial_types[0] + '-FailedGFA.png'))
+        
+        plt.imshow(GFA)
+        plt.title(f"Failed GFA- {savename}")
+        plt.savefig(savename)
+        plt.show()
+        
+        print(f"Failed on {algorithm} algorithm")
+        print()
+        
             
             
 
@@ -169,7 +205,7 @@ for index, file_list in enumerate(filename_lists[0::]):
 
  #SEAM modules
 from SEAM import SEAM
-from ImageAnalysis import Keyence
+from Analysis.ImageAnalysis import Keyence
  #Python-native libraries
 from tkinter import Tk, filedialog
 import traceback
