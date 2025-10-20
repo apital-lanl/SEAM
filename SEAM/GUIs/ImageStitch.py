@@ -16,6 +16,7 @@ from tkinter import ttk, filedialog, messagebox
 import os
 import random  # For demonstration purposes
 from PIL import Image, ImageTk
+Image.MAX_IMAGE_PIXELS = None   # disables warning on large file load
 import traceback
 import matplotlib.pyplot as plt
 
@@ -30,6 +31,10 @@ class SEMMontageApp:
         self.homography_algorithms = []
         self.alternate_save_location = ''
         self.dumb_stitch = True
+          #"is there an image to display"; if not, show a random color block
+        self.plotted_image = False
+          #initialize 'display_image' to nothing
+        self.display_image = None
         
         # Create main frame
         self.main_frame = ttk.Frame(self.root)
@@ -460,12 +465,21 @@ class SEMMontageApp:
                 
                 # Process each category in the collection
                 file_list = self.image_collections[collection_name]
+                  #create a base savename
+                basename_list = os.path.basename(file_list[0]).split('_')[0:-2]
+                trial_types = []
+                for part in basename_list:
+                    if ('BED' in part) or ('SED' in part):
+                        trial_types.append(part)
+                dirname = os.path.dirname(os.path.dirname(file_list[0]))
 
                 arg_dict = {
                     'guess_and_check': False, 
                     'show_guess_checking': False,
                     'show_matchpics': False,
                     'show_match_scatter': False,
+                    'show_final_annotated': False,
+                    'save_final_annotated': True,
                     'user_input': False,
                     'overright_GFA': True,
                     'algo': 'dumb',
@@ -478,12 +492,16 @@ class SEMMontageApp:
                     },
                     'average_error_threshold': 50
                 }
+                #Flag for whether plot has been done already
+                plotted_already = False
+                #Flag for process dictionary (whether process finished or not)
+                good_prcs_dict = False
     
                 try:
                     if self.dumb_stitch:
                         algorithm = 'dumb'
             
-                        GFA = SEM.spatial_stitch(file_list, 
+                        GFA, plot_image = SEM.spatial_stitch(file_list, 
                                         guess_and_check=arg_dict['guess_and_check'],
                                         overright_GFA=arg_dict['overright_GFA'],
                                         update_metadict=arg_dict['update_metadict'],
@@ -492,19 +510,35 @@ class SEMMontageApp:
                                         global_manual_shift=arg_dict['global_manual_shift'],
                                         )
             
+                        self.plotted_image = True
+                        self.display_image = plot_image
+                        
                         interim_prcs_dict = {
                             'name': 'SEM stitch',
                             'status': 'completed',
                             'input_dict': arg_dict,
                             'files': file_list
-                        }
-            
+                            }
+
+                        savename = os.path.join(dirname, str(trial_types[0] + '_DumbStitch.png'))
+                        
+                        plt.imshow(GFA)
+                        plt.title(f"GFA-{savename}")
+                        plt.savefig(savename)
+                        good_prcs_dict = True
+                        plt.show()
+                        plotted_already = True
+                    
                     else:
                         if len(self.homography_algorithms) > 0:
                             for algorithm in self.homography_algorithms:
                                 arg_dict['algo'] = algorithm
+
+                                #Reset flags for each iteration
+                                plotted_already = False
+                                good_prcs_dict = False
                     
-                                GFA = SEM.homography_stitch(file_list, 
+                                GFA, plot_image = SEM.homography_stitch(file_list, 
                                                 guess_and_check=arg_dict['guess_and_check'],
                                                 show_guess_checking=arg_dict['show_guess_checking'],
                                                 show_matchpics=arg_dict['show_matchpics'],
@@ -518,19 +552,34 @@ class SEMMontageApp:
                                                 global_manual_shift=arg_dict['global_manual_shift'],
                                                 average_error_threshold=arg_dict['average_error_threshold'],
                                                 )
-                    
+                                
                                 interim_prcs_dict = {
                                     'name': 'SEM stitch',
                                     'status': 'completed',
                                     'input_dict': arg_dict,
                                     'files': file_list
-                                }
+                                    }
+                                
+
+                                savename = os.path.join(dirname, str(trial_types[0] + f'_{algorithm}.png'))
+                        
+                                plt.imshow(GFA)
+                                plt.title(f"GFA-{savename}")
+                                plt.savefig(savename)
+                                  #flag that everything went OK
+                                good_prcs_dict = True
+                                self.plotted_image = True
+                                self.display_image = plot_image
+                                  #show the image
+                                plt.show()
+                                  #flag that everything went OK
+                                plotted_already = True
             
                         else:
                             algorithm = 'SIFT'
                             arg_dict['algo'] = algorithm
                 
-                            GFA = SEM.homography_stitch(file_list, 
+                            GFA, plot_image = SEM.homography_stitch(file_list, 
                                             guess_and_check=arg_dict['guess_and_check'],
                                             show_guess_checking=arg_dict['show_guess_checking'],
                                             show_matchpics=arg_dict['show_matchpics'],
@@ -550,39 +599,49 @@ class SEMMontageApp:
                                 'status': 'completed',
                                 'input_dict': arg_dict,
                                 'files': file_list
-                            }
+                                }
 
- 
-                    plt.imshow(GFA)
-                    plt.title(f"Failed GFA- {savename}")
-                    plt.savefig(savename)
-                    plt.show()
-                
+                            savename = os.path.join(dirname, str(trial_types[0] + f'_{algorithm}.png'))
+                        
+                            plt.imshow(GFA)
+                            plt.title(f"GFA-{savename}")
+                            plt.savefig(savename)
+                            good_prcs_dict = True
+                            self.plotted_image = True
+                            self.display_image = plot_image
+                            plt.show()
+                            plotted_already = True
+
                 except Exception as exc:
                     print(f"Failed on {algorithm} algorithm")
                     print(traceback.format_exc())
                     print()
-        
-                    interim_prcs_dict = {
-                        'name': 'SEM stitch',
-                        'status': 'failed',
-                        'error_trace': traceback.format_exc(),
-                        'input_dict': arg_dict,
-                        'files': file_list
-                    }
+                    
+                    #If 'good_prcs_dict' hasn't flipped value (to True), no image was made
+                    if not good_prcs_dict:
+                        interim_prcs_dict = {
+                            'name': 'SEM stitch',
+                            'status': 'failed',
+                            'error_trace': traceback.format_exc(),
+                            'input_dict': arg_dict,
+                            'files': file_list
+                            }
+                    #If the process went through 'good_prcs_dict', an image was saved 
+                    else:
+                        self.plotted_image = True
+                        self.display_image = plot_image
 
         
-                    print(f"Failed on {algorithm} algorithm")
+                    print(f"Error on {algorithm} algorithm")
                     print()
 
                     #Dump the failure to an interim process file
-                    basename_list = os.path.basename(file_list[0]).split('_')[0:-2]
-                    trial_types = []
-                    for part in basename_list:
-                        if ('BED' in part) or ('SED' in part):
-                            trial_types.append(part)
-                    dirname = os.path.dirname(os.path.dirname(file_list[0]))
                     savename = os.path.join(dirname, str(trial_types[0] + '-FailedGFA.png'))
+                    if not plotted_already:
+                        plt.imshow(GFA)
+                        plt.title(f"GFA-{savename}")
+                        plt.savefig(savename)
+                        plt.show()
 
                     Project.interim_process_dump(interim_prcs_dict)
 
@@ -608,6 +667,7 @@ class SEMMontageApp:
         # Reset task label
         self.task_label.config(text="Current task: None")
     
+    
     def display_final_image(self, collection_name):
         """Display a final image in the canvas (simulated)"""
         # Clear canvas
@@ -617,12 +677,46 @@ class SEMMontageApp:
         width = self.canvas.winfo_width()
         height = self.canvas.winfo_height()
         
-        # Random color for demonstration
-        color = f"#{random.randint(0, 255):02x}{random.randint(0, 255):02x}{random.randint(0, 255):02x}"
+        # If no image has been made yet, show a random color square
+        if not self.plotted_image:
+
+            # Random color for demonstration
+            color = f"#{random.randint(0, 255):02x}{random.randint(0, 255):02x}{random.randint(0, 255):02x}"
         
-        self.canvas.create_rectangle(10, 10, width-10, height-10, fill=color)
-        self.canvas.create_text(width/2, height/2, text=f"Montage for {collection_name}", 
-                               fill="white", font=("Arial", 24))
+            self.canvas.create_rectangle(10, 10, width-10, height-10, fill=color)
+            self.canvas.create_text(width/2, height/2, text=f"Montage for {collection_name}", 
+                                   fill="white", font=("Arial", 24))
+        elif type(self.display_image) != None:
+            #populate canvas with plotted image
+               # For very large images, use a more memory-efficient approach
+            if width * height > 20000000:  # ~20 million pixels threshold
+                # Use thumbnail instead of resize for better memory efficiency
+                # Create a copy to avoid modifying the original
+                img_copy = self.display_image.copy()
+                img_copy = Image.fromarray(img_copy)
+                img_copy.thumbnail((width, height), Image.LANCZOS)
+                self.displayed_image = img_copy
+            else:
+                # For smaller images, use the normal resize method
+                img = Image.fromarray(self.display_image)
+                self.displayed_image = img.resize((width, height), Image.LANCZOS)
+                
+            # Create the PhotoImage
+            self.photo = ImageTk.PhotoImage(self.displayed_image)
+                
+            # Update canvas
+            self.canvas.delete("all")
+            self.canvas_image_id = self.canvas.create_image(0, 0, anchor=tk.NW, image=self.photo)
+            self.canvas.config(scrollregion=self.canvas.bbox(tk.ALL))
+
+        else:
+            # Random color for demonstration
+            color = f"#{random.randint(0, 255):02x}{random.randint(0, 255):02x}{random.randint(0, 255):02x}"
+        
+            self.canvas.create_rectangle(10, 10, width-10, height-10, fill=color)
+            self.canvas.create_text(width/2, height/2, text=f"Montage for {collection_name}", 
+                                   fill="white", font=("Arial", 24))
+
     
     # Menu callbacks
     def menu_open(self):
