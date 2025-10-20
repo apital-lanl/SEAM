@@ -27,6 +27,7 @@ import json
 import math
 import matplotlib.pyplot as plt
 import matplotlib.colors as mcolors
+from matplotlib.backends.backend_agg import FigureCanvasAgg
 import numpy as np
 from numpy.lib.stride_tricks import sliding_window_view
 from operator import itemgetter
@@ -1530,6 +1531,10 @@ class SEM:
                           show_matchpics = True,
                           show_match_scatter = True,
                           user_input = False,
+                          show_final_GFA = False,
+                          save_final_GFA = False,
+                          show_final_annotated = False,
+                          save_final_annotated = True,
                           overright_GFA = True,
                           algo = 'SIFT',
                           update_metadict = False,
@@ -1869,7 +1874,8 @@ class SEM:
         fig, ax = plt.subplots()
         plt.figure(figsize=(50,40))
         plt.title(f"{filename} Stitched Image")        
-        ax.imshow(GFA)
+        if show_final_GFA:
+            ax.imshow(GFA)
     
         # Create annotations for GFA location
         for idx, (x, y) in enumerate(xy_loc_list):
@@ -1896,7 +1902,7 @@ class SEM:
         print(gfa_filename)
         print()
         
-        #Save file data dict as a json
+        #Save file data dict as a json in same folder with images
         json_filepath = os.path.join(folder_path, file_name+".json")
         with open(json_filepath, 'w') as file:
             json.dump(GFA_dict, file, indent=4)
@@ -1912,7 +1918,9 @@ class SEM:
         #gfa_image = PIL.Image.fromarray(np.divide(GFA, gfa_count))
         gfa_image = PIL.Image.fromarray(GFA)
         gfa_image = gfa_image.convert("L")
-        gfa_image.save(gfa_filename, format= "PNG")
+        if save_final_GFA:
+            gfa_image.save(gfa_filename, format= "PNG")
+        
         if len(save_alternate_location)>0:
             try:
                 alt_location = os.path.join(save_alternate_location, file_name+".png")
@@ -1927,7 +1935,8 @@ class SEM:
         except:
             plt.figure(figsize=(50,40))
         annot_filename = os.path.join(folder_path, 'Annotated_'+file_name+".png")
-        fig.savefig(annot_filename)
+        if show_final_annotated:
+            fig.savefig(annot_filename)
         if len(save_alternate_location)>0:
             try:
                 annot_filename = os.path.join(save_alternate_location, 'Annotated_'+file_name+".png")
@@ -1935,9 +1944,30 @@ class SEM:
             except:
                 pass
         plt.title(f"{filename} Stitched Image")
-        plt.show()
+        if show_final_annotated:
+            plt.show()
         
-        return GFA
+        # Convert matplotlib figure into an array and pass
+        # Image from plot
+        ax.axis('off')
+        #fig.tight_layout(pad=0)   #Call for tight figure rendering; not applicable as written
+
+        # To remove the huge white borders
+        ax.margins(0)
+
+        # Get matplotlib render buffer directly and assign to 'plot_image'
+        figure_canvas_agg = FigureCanvasAgg(fig)
+        figure_canvas_agg.draw()
+
+        # Get the RGBA buffer and convert it to RGB
+        w, h = fig.canvas.get_width_height()
+        buf = np.frombuffer(figure_canvas_agg.buffer_rgba(), dtype=np.uint8)
+        buf.shape = (h, w, 4)  # RGBA buffer
+
+        # Convert RGBA to RGB if needed
+        plot_image = buf[:, :, :3]  # Extract just the RGB channels
+
+        return GFA, plot_image
 
     
     @staticmethod
@@ -1945,6 +1975,10 @@ class SEM:
                           guess_and_check = False,
                           overright_GFA = True,
                           update_metadict = False,
+                          show_final_GFA = False,
+                          save_final_GFA = False,
+                          show_final_annotated = False,
+                          save_final_annotated = True,
                           save_alternate_location = '',
                           shift_dict = {},
                           global_manual_shift = {
@@ -2202,8 +2236,9 @@ class SEM:
             gfa_count = np.ones((GFA.shape[0], GFA.shape[1]))
         fig, ax = plt.subplots()
         plt.figure(figsize=(50,40))
-        plt.title(f"{filename} Stitched Image")        
-        ax.imshow(GFA)
+        plt.title(f"{filename} Stitched Image")
+        if show_final_GFA:
+            ax.imshow(GFA)
     
         # Create annotations for GFA location
         for idx, (x, y) in enumerate(xy_loc_list):
@@ -2246,7 +2281,9 @@ class SEM:
         #gfa_image = PIL.Image.fromarray(np.divide(GFA, gfa_count))
         gfa_image = PIL.Image.fromarray(GFA)
         gfa_image = gfa_image.convert("L")
-        gfa_image.save(gfa_filename, format= "PNG")
+        if save_final_GFA:
+            gfa_image.save(gfa_filename, format= "PNG")
+        
         if len(save_alternate_location)>0:
             try:
                 alt_location = os.path.join(save_alternate_location, file_name+".png")
@@ -2261,7 +2298,8 @@ class SEM:
         except:
             plt.figure(figsize=(50,40))
         annot_filename = os.path.join(folder_path, 'Annotated_'+file_name+".png")
-        fig.savefig(annot_filename)
+        if save_final_annotated:
+            fig.savefig(annot_filename)
         if len(save_alternate_location)>0:
             try:
                 annot_filename = os.path.join(save_alternate_location, 'Annotated_'+file_name+".png")
@@ -2269,9 +2307,30 @@ class SEM:
             except:
                 pass
         plt.title(f"{filename} Stitched Image")
-        plt.show()
-        
-        return GFA
+        if show_final_annotated:
+            plt.show()
+
+        # Convert matplotlib figure into an array and pass
+        # Image from plot
+        ax.axis('off')
+        #fig.tight_layout(pad=0)   #Call for tight figure rendering; not applicable as written
+
+        # To remove the huge white borders
+        ax.margins(0)
+
+        # Get matplotlib render buffer directly and assign to 'plot_image'
+        figure_canvas_agg = FigureCanvasAgg(fig)
+        figure_canvas_agg.draw()
+
+        # Get the RGBA buffer and convert it to RGB
+        w, h = fig.canvas.get_width_height()
+        buf = np.frombuffer(figure_canvas_agg.buffer_rgba(), dtype=np.uint8)
+        buf.shape = (h, w, 4)  # RGBA buffer
+
+        # Convert RGBA to RGB if needed
+        plot_image = buf[:, :, :3]  # Extract just the RGB channels
+
+        return GFA, plot_image
     
     
     @staticmethod
