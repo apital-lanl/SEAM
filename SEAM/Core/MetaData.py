@@ -271,6 +271,8 @@ class Meta:
             else:
                 Meta.create_seam_config(seam_guess)
                 seam_root = os.path.join(seam_guess, ".seam")
+
+            config_root = os.path.join(seam_root, 'seam_config.json')
         
         elif len(trial_dirs) == 0:
             folder_check = os.path.isdir(os.path.join(root_home, ".seam"))
@@ -415,10 +417,18 @@ class Meta:
         '''
 
         #Generate directories
-        os.makedirs(root_dir, exist_ok = ok_exist_mode)
-
+        if os.path.exists(root_dir):
+            pass
+        else:
+            os.makedirs(root_dir, exist_ok = ok_exist_mode)
+        
         log_root_directory = os.path.join(root_dir, "Logs")
-        os.makedirs(log_root_directory, exist_ok = ok_exist_mode)
+        if not os.path.exists(log_root_directory):
+            os.makedirs(log_root_directory, exist_ok = ok_exist_mode)
+
+        metadict_root_directory = os.path.join(root_dir, "meta_dicts")
+        if not os.path.exists(metadict_root_directory):
+            os.makedirs(metadict_root_directory, exist_ok = ok_exist_mode)
 
         #Create generic config file 
         config_dict = {
@@ -445,25 +455,5 @@ class Summary:
     version_mod_date = '202-'
     
     
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
+  
     

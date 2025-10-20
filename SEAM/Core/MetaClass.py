@@ -27,7 +27,6 @@ import errno
   
   #import other SEAM modules
 from SEAM.Core.TypeHash import Fingerprint
-from SEAM.Core.MetaData.Meta import walk_directory
 
 
    #    SEAM variables   ##########################################################################
@@ -208,7 +207,11 @@ class Project:
         '''
 
         #Walk the directory and make sure each file has a 'meta_dict'; reasonably fast if the directory is < ~1 Gb
-        metawalk_output_dict = walk_directory(filepath= directory, seam_root= seam_root)
+        #TODO: Split Utilities to a separate 'Core' file to avoid these circular import errors
+        #metawalk_output_dict = walk_directory(filepath= directory, seam_root= seam_root)
+
+
+        pass
         
         
     
@@ -543,37 +546,53 @@ class Utilities:
         '''
 
         #Generate directories
-        os.makedirs(root_dir, exist_ok = ok_exist_mode)
-                    
-        metadict_root_directory = os.path.join(root_dir, "meta_dicts")
-        os.makedirs(metadict_root_directory, exist_ok = ok_exist_mode)
-        
-        recipes_root_directory = os.path.join(root_dir, "Recipes")
-        os.makedirs(recipes_root_directory, exist_ok = ok_exist_mode)
-        
-        projects_root_directory = os.path.join(root_dir, "Projects")
-        os.makedirs(projects_root_directory, exist_ok = ok_exist_mode)
-
-        typehash_root_directory = os.path.join(root_dir, "TypeHashes")
-        os.makedirs(typehash_root_directory, exist_ok = ok_exist_mode)
-
-        data_root_directory = os.path.join(root_dir, "Data")
-        os.makedirs(data_root_directory, exist_ok = ok_exist_mode)
-
-        template_root_directory = os.path.join(root_dir, "Templates")
-        os.makedirs(template_root_directory, exist_ok = ok_exist_mode)
+        if not os.path.exists(root_dir):
+            os.makedirs(root_dir, exist_ok = ok_exist_mode)
+            
         
         log_root_directory = os.path.join(root_dir, "Logs")
-        os.makedirs(log_root_directory, exist_ok = ok_exist_mode)
+        if not os.path.exists(log_root_directory):
+            os.makedirs(log_root_directory, exist_ok = ok_exist_mode)
+                    
+        metadict_root_directory = os.path.join(root_dir, "meta_dicts")
+        if not os.path.exists(metadict_root_directory):
+            os.makedirs(metadict_root_directory, exist_ok = ok_exist_mode)
+        
+        recipes_root_directory = os.path.join(root_dir, "Recipes")
+        if not os.path.exists(recipes_root_directory):
+            os.makedirs(recipes_root_directory, exist_ok = ok_exist_mode)
+        
+        projects_root_directory = os.path.join(root_dir, "Projects")
+        if not os.path.exists(projects_root_directory):
+            os.makedirs(projects_root_directory, exist_ok = ok_exist_mode)
+
+        typehash_root_directory = os.path.join(root_dir, "TypeHashes")
+        if not os.path.exists(typehash_root_directory):
+            os.makedirs(typehash_root_directory, exist_ok = ok_exist_mode)
+
+        data_root_directory = os.path.join(root_dir, "Data")
+        if not os.path.exists(data_root_directory):
+            os.makedirs(data_root_directory, exist_ok = ok_exist_mode)
+
+        template_root_directory = os.path.join(root_dir, "Templates")
+        if not os.path.exists(template_root_directory):
+            os.makedirs(template_root_directory, exist_ok = ok_exist_mode)
+        
+        log_root_directory = os.path.join(root_dir, "Logs")
+        if not os.path.exists(log_root_directory):
+            os.makedirs(log_root_directory, exist_ok = ok_exist_mode)
         
         label_root_directory = os.path.join(root_dir, "Labels")
-        os.makedirs(label_root_directory, exist_ok = ok_exist_mode)
+        if not os.path.exists(label_root_directory):
+            os.makedirs(label_root_directory, exist_ok = ok_exist_mode)
         
         links_root_directory = os.path.join(root_dir, "Links")
-        os.makedirs(links_root_directory, exist_ok = ok_exist_mode)
+        if not os.path.exists(links_root_directory):
+            os.makedirs(links_root_directory, exist_ok = ok_exist_mode)
         
-        sobjects_root_directory = os.path.join(root_dir, "Objects")
-        os.makedirs(objects_root_directory, exist_ok = ok_exist_mode)
+        objects_root_directory = os.path.join(root_dir, "Objects")
+        if not os.path.exists(objects_root_directory):
+            os.makedirs(objects_root_directory, exist_ok = ok_exist_mode)
         
 
         #Create generic config file 
