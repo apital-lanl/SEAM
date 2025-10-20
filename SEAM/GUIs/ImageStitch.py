@@ -479,7 +479,7 @@ class SEMMontageApp:
                     'show_matchpics': False,
                     'show_match_scatter': False,
                     'show_final_annotated': False,
-                    'save_final_annotated': True,
+                    'save_final_annotated': False,
                     'user_input': False,
                     'overright_GFA': True,
                     'algo': 'dumb',
@@ -501,17 +501,21 @@ class SEMMontageApp:
                     if self.dumb_stitch:
                         algorithm = 'dumb'
             
-                        GFA, plot_image = SEM.spatial_stitch(file_list, 
+                        GFA = SEM.spatial_stitch(file_list, 
                                         guess_and_check=arg_dict['guess_and_check'],
                                         overright_GFA=arg_dict['overright_GFA'],
                                         update_metadict=arg_dict['update_metadict'],
+                                        show_final_annotated=arg_dict['show_final_annotated'],
+                                        save_final_annotated=arg_dict['save_final_annotated'],
                                         save_alternate_location=arg_dict['alternate_save_loaction'],
                                         shift_dict=arg_dict['shift_dict'],
                                         global_manual_shift=arg_dict['global_manual_shift'],
                                         )
             
                         self.plotted_image = True
-                        self.display_image = plot_image
+                        gfa_image = Image.fromarray(GFA)
+                        gfa_image = gfa_image.convert("L")
+                        self.display_image = gfa_image
                         
                         interim_prcs_dict = {
                             'name': 'SEM stitch',
@@ -521,12 +525,11 @@ class SEMMontageApp:
                             }
 
                         savename = os.path.join(dirname, str(trial_types[0] + '_DumbStitch.png'))
-                        
+
                         plt.imshow(GFA)
                         plt.title(f"GFA-{savename}")
                         plt.savefig(savename)
                         good_prcs_dict = True
-                        plt.show()
                         plotted_already = True
                     
                     else:
@@ -538,11 +541,13 @@ class SEMMontageApp:
                                 plotted_already = False
                                 good_prcs_dict = False
                     
-                                GFA, plot_image = SEM.homography_stitch(file_list, 
+                                GFA = SEM.homography_stitch(file_list, 
                                                 guess_and_check=arg_dict['guess_and_check'],
                                                 show_guess_checking=arg_dict['show_guess_checking'],
                                                 show_matchpics=arg_dict['show_matchpics'],
                                                 show_match_scatter=arg_dict['show_match_scatter'],
+                                                show_final_annotated=arg_dict['show_final_annotated'],
+                                                save_final_annotated=arg_dict['save_final_annotated'],
                                                 user_input=arg_dict['user_input'],
                                                 overright_GFA=arg_dict['overright_GFA'],
                                                 algo=arg_dict['algo'],
@@ -560,30 +565,29 @@ class SEMMontageApp:
                                     'files': file_list
                                     }
                                 
+                                self.plotted_image = True
+                                gfa_image = Image.fromarray(GFA)
+                                gfa_image = gfa_image.convert("L")
+                                self.display_image = gfa_image
 
                                 savename = os.path.join(dirname, str(trial_types[0] + f'_{algorithm}.png'))
                         
-                                plt.imshow(GFA)
-                                plt.title(f"GFA-{savename}")
-                                plt.savefig(savename)
-                                  #flag that everything went OK
-                                good_prcs_dict = True
-                                self.plotted_image = True
-                                self.display_image = plot_image
-                                  #show the image
-                                plt.show()
-                                  #flag that everything went OK
+                                # plt.imshow(GFA)
+                                # plt.title(f"GFA-{savename}")
+                                # plt.savefig(savename)
                                 plotted_already = True
             
                         else:
                             algorithm = 'SIFT'
                             arg_dict['algo'] = algorithm
                 
-                            GFA, plot_image = SEM.homography_stitch(file_list, 
+                            GFA = SEM.homography_stitch(file_list, 
                                             guess_and_check=arg_dict['guess_and_check'],
                                             show_guess_checking=arg_dict['show_guess_checking'],
                                             show_matchpics=arg_dict['show_matchpics'],
                                             show_match_scatter=arg_dict['show_match_scatter'],
+                                            show_final_annotated=arg_dict['show_final_annotated'],
+                                            save_final_annotated=arg_dict['save_final_annotated'],
                                             user_input=arg_dict['user_input'],
                                             overright_GFA=arg_dict['overright_GFA'],
                                             algo=arg_dict['algo'],
@@ -601,6 +605,11 @@ class SEMMontageApp:
                                 'files': file_list
                                 }
 
+                            self.plotted_image = True
+                            gfa_image = Image.fromarray(GFA)
+                            gfa_image = gfa_image.convert("L")
+                            self.display_image = gfa_image
+
                             savename = os.path.join(dirname, str(trial_types[0] + f'_{algorithm}.png'))
                         
                             plt.imshow(GFA)
@@ -609,7 +618,6 @@ class SEMMontageApp:
                             good_prcs_dict = True
                             self.plotted_image = True
                             self.display_image = plot_image
-                            plt.show()
                             plotted_already = True
 
                 except Exception as exc:
@@ -693,13 +701,11 @@ class SEMMontageApp:
                 # Use thumbnail instead of resize for better memory efficiency
                 # Create a copy to avoid modifying the original
                 img_copy = self.display_image.copy()
-                img_copy = Image.fromarray(img_copy)
                 img_copy.thumbnail((width, height), Image.LANCZOS)
                 self.displayed_image = img_copy
             else:
                 # For smaller images, use the normal resize method
-                img = Image.fromarray(self.display_image)
-                self.displayed_image = img.resize((width, height), Image.LANCZOS)
+                self.displayed_image = self.display_image.resize((width, height), Image.LANCZOS)
                 
             # Create the PhotoImage
             self.photo = ImageTk.PhotoImage(self.displayed_image)
