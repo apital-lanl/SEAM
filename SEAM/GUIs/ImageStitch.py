@@ -19,6 +19,9 @@ from PIL import Image, ImageTk
 Image.MAX_IMAGE_PIXELS = None   # disables warning on large file load
 import traceback
 import matplotlib.pyplot as plt
+import matplotlib
+matplotlib.use('TkAgg')  #Use backend to keep windows open
+plt.ion()  # Turn on interactive mode
 
 
 class SEMMontageApp:
@@ -35,6 +38,9 @@ class SEMMontageApp:
         self.plotted_image = False
           #initialize 'display_image' to nothing
         self.display_image = None
+        self.open_final_montage = tk.BooleanVar(value=False)
+        self.save_final_annotated = tk.BooleanVar(value=False)
+        self.open_final_annotated = tk.BooleanVar(value=False)
         
         # Create main frame
         self.main_frame = ttk.Frame(self.root)
@@ -82,7 +88,7 @@ class SEMMontageApp:
         save_frame = ttk.Frame(self.left_panel)
         save_frame.pack(fill=tk.X, padx=5, pady=5)
         
-        ttk.Label(save_frame, text="Alternate save location:").pack(anchor=tk.W)
+        ttk.Label(save_frame, text="Additional save location:").pack(anchor=tk.W)
         
         # Create a frame for the textbox and button
         input_frame = ttk.Frame(save_frame)
@@ -127,6 +133,21 @@ class SEMMontageApp:
                        command=self.update_algorithms).pack(anchor=tk.W, padx=5, pady=2)
         ttk.Checkbutton(self.options_frame, text="ORB", variable=self.orb_var,
                        command=self.update_algorithms).pack(anchor=tk.W, padx=5, pady=2)
+
+        # Add option buttons
+        ttk.Separator(self.options_frame, orient='horizontal').pack(fill='x', pady=4)
+
+        ttk.Checkbutton(self.options_frame,
+                        text="Open final montage",
+                        variable=self.open_final_montage).pack(anchor=tk.W, padx=5, pady=2)
+
+        ttk.Checkbutton(self.options_frame,
+                        text="Save annotated image",
+                        variable=self.save_final_annotated).pack(anchor=tk.W, padx=5, pady=2)
+
+        ttk.Checkbutton(self.options_frame,
+                        text="Open annotated image",
+                        variable=self.open_final_annotated).pack(anchor=tk.W, padx=5, pady=2)
     
     def update_algorithms(self):
         """Update the homography algorithms list based on checkbox selection"""
@@ -417,12 +438,19 @@ class SEMMontageApp:
             status = self.collection_status.get(collection_name, 'pending')
             
             if status == 'in_progress':
-                self.collections_listbox.itemconfig(idx, fg='red')  # Apply only color
-                self.size_listbox.itemconfig(idx, fg='red')
-            elif status == 'completed':
-                self.collections_listbox.itemconfig(idx, fg='gray')  # Apply only color
+                self.collections_listbox.itemconfig(idx, fg='yellow')  # Apply only color
+                self.size_listbox.itemconfig(idx, fg='yellow')
+            elif status == 'Completed':
+                self.collections_listbox.itemconfig(idx, fg='gray')
                 self.size_listbox.itemconfig(idx, fg='gray')
-    
+            elif status == 'StitchCompleted w/ DisplayError':
+                self.collections_listbox.itemconfig(idx, fg='orange')
+                self.size_listbox.itemconfig(idx, fg='orange')
+            elif status == 'Failure':
+                self.collections_listbox.itemconfig(idx, fg='red') 
+                self.size_listbox.itemconfig(idx, fg='red')
+
+
     def clear_selected(self):
         """Clear selected items from the Collections listbox"""
         selected_indices = self.collections_listbox.curselection()
@@ -496,6 +524,8 @@ class SEMMontageApp:
                 plotted_already = False
                 #Flag for process dictionary (whether process finished or not)
                 good_prcs_dict = False
+                self.plotted_image = False
+
     
                 try:
                     if self.dumb_stitch:
@@ -512,11 +542,6 @@ class SEMMontageApp:
                                         global_manual_shift=arg_dict['global_manual_shift'],
                                         )
             
-                        self.plotted_image = True
-                        gfa_image = Image.fromarray(GFA)
-                        gfa_image = gfa_image.convert("L")
-                        self.display_image = gfa_image
-                        
                         interim_prcs_dict = {
                             'name': 'SEM stitch',
                             'status': 'completed',
@@ -524,12 +549,21 @@ class SEMMontageApp:
                             'files': file_list
                             }
 
+                        good_prcs_dict = True
+
+                        gfa_image = Image.fromarray(GFA)
+                        gfa_image = gfa_image.convert("L")
+                        self.plotted_image = True
+                        self.display_image = gfa_image
+
                         savename = os.path.join(dirname, str(trial_types[0] + '_DumbStitch.png'))
 
-                        plt.imshow(GFA)
-                        plt.title(f"GFA-{savename}")
-                        plt.savefig(savename)
-                        good_prcs_dict = True
+                        if self.open_final_montage:
+                            fig = plt.figure()
+                            plt.imshow(GFA)
+                            plt.title(f"GFA-{savename}")
+                            fig.canvas.draw()
+                            plt.pause(0.001)  # Small pause to allow the figure to be displayed
                         plotted_already = True
                     
                     else:
@@ -564,17 +598,18 @@ class SEMMontageApp:
                                     'input_dict': arg_dict,
                                     'files': file_list
                                     }
-                                
-                                self.plotted_image = True
+
+                                good_prcs_dict = True
+                                 
                                 gfa_image = Image.fromarray(GFA)
                                 gfa_image = gfa_image.convert("L")
+                                self.plotted_image = True
                                 self.display_image = gfa_image
 
                                 savename = os.path.join(dirname, str(trial_types[0] + f'_{algorithm}.png'))
-                        
-                                # plt.imshow(GFA)
-                                # plt.title(f"GFA-{savename}")
-                                # plt.savefig(savename)
+                                if self.open_final_montage:
+                                    plt.imshow(GFA)
+                                    plt.title(f"GFA-{savename}")
                                 plotted_already = True
             
                         else:
@@ -605,19 +640,17 @@ class SEMMontageApp:
                                 'files': file_list
                                 }
 
+                            good_prcs_dict = True
+
                             self.plotted_image = True
                             gfa_image = Image.fromarray(GFA)
                             gfa_image = gfa_image.convert("L")
                             self.display_image = gfa_image
-
-                            savename = os.path.join(dirname, str(trial_types[0] + f'_{algorithm}.png'))
                         
-                            plt.imshow(GFA)
-                            plt.title(f"GFA-{savename}")
-                            plt.savefig(savename)
-                            good_prcs_dict = True
-                            self.plotted_image = True
-                            self.display_image = plot_image
+                            savename = os.path.join(dirname, str(trial_types[0] + f'_{algorithm}.png'))
+                            if self.open_final_montage:
+                                plt.imshow(GFA)
+                                plt.title(f"GFA-{savename}")
                             plotted_already = True
 
                 except Exception as exc:
@@ -636,16 +669,17 @@ class SEMMontageApp:
                             }
                     #If the process went through 'good_prcs_dict', an image was saved 
                     else:
+                        gfa_image = Image.fromarray(GFA)
+                        gfa_image = gfa_image.convert("L")
                         self.plotted_image = True
-                        self.display_image = plot_image
+                        self.display_image = gfa_image
 
-        
                     print(f"Error on {algorithm} algorithm")
                     print()
 
                     #Dump the failure to an interim process file
                     savename = os.path.join(dirname, str(trial_types[0] + '-FailedGFA.png'))
-                    if not plotted_already:
+                    if not plotted_already and self.open_final_montage:
                         plt.imshow(GFA)
                         plt.title(f"GFA-{savename}")
                         plt.savefig(savename)
@@ -658,11 +692,16 @@ class SEMMontageApp:
                 self.root.update()
                 
                 # Update status to completed
-                self.collection_status[collection_name] = 'completed'
+                if good_prcs_dict and plotted_already:
+                    self.collection_status[collection_name] = f'Completed'
+                elif good_prcs_dict:
+                    self.collection_status[collection_name] = f'StitchCompleted w/ DisplayError'
+                else:
+                    self.collection_status[collection_name] = f'Failure'
                 self.update_collections_listbox()
                 
                 # Add completion summary to the Completed listbox
-                summary = f"Completed: {collection_name} - {len(file_list)} images"
+                summary = f"{collection_name}: {self.collection_status[collection_name]}"
                 self.completed_listbox.insert(0, summary)
                 
                 # Display a final image (simulated)

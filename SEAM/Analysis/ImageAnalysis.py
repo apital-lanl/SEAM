@@ -2243,9 +2243,9 @@ class SEM:
 
         #Save the annotated version
         annot_filename = os.path.join(folder_path, 'Annotated_'+file_name+".png")
-        if show_final_annotated:
+        if save_final_annotated:
             fig.savefig(annot_filename)
-        if len(save_alternate_location)>0:
+        if len(save_alternate_location)>0 and save_final_annotated:
             try:
                 annot_filename = os.path.join(save_alternate_location, 'Annotated_'+file_name+".png")
                 fig.savefig(annot_filename)
