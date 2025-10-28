@@ -1,9 +1,9 @@
-#Ignore pycache files and directories
-.pyc	
-/__pychache__
+#Ignore pycache files
+*.pyc	
 
-#Ignore vscode directories
-/.vs
+#Ignore pycache directories
+__pycache__/
+.vs/
 
 #Ignore package info
 /SEAM.egg-info
