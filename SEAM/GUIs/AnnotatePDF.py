@@ -26,6 +26,22 @@ class PDFAnnotator:
         self.zoom_factor = 1.0
         self.current_tool = "select"
         self.current_color = "#FF0000"  # Red with 50% opacity
+        self.current_annotation_type = "General"
+        self.annotation_color_dict = {
+            "#F53C14": "Text, titles",
+            "#F56E14": "Text, authors",
+            "#F5C814": "Text, abstract",
+            "#97F514": "Text, body",
+            "#B57422": "Text, author info",
+            "#14BA94": "Text, caption",
+            "#2CA6DE": "Text, references",
+            "#6725F7": "Figure",
+            "#CD25F7": "Table",  
+            "#DE2CD6": "Special-1",
+            "#F725A3": "Special-2",
+            "#F01D52": "Special-3",
+            "#FF0000": "General"
+            }
         self.current_color_alpha = 128  # Alpha value (0-255)
         self.polygons = {}  # Dictionary to store polygons by page: {page_num: [(polygon, color), ...]}
         self.current_polygon = []
@@ -269,6 +285,7 @@ class PDFAnnotator:
     def set_custom_color(self, color):
         """Set the current color to the selected custom color"""
         self.current_color = color
+        self.current_annotation_type = self.annotation_color_dict[color]
         
         # Add to used colors if not already there
         if self.current_color not in self.used_colors:
@@ -637,6 +654,7 @@ class PDFAnnotator:
         self.polygon_dict[key] = {
             "points": pdf_points,  # Store PDF coordinates
             "color": self.current_color,
+            "label": self.current_annotation_type,
             "page": self.current_page,
             "content": polygon_content
         }
