@@ -3,6 +3,7 @@
 
 #Ignore pycache directories
 __pycache__/
+/__pycache__
 .vs/
 
 #Ignore package info
