@@ -4053,6 +4053,8 @@ class Utilities:
         '''
 
         #Define and initialize variables
+        array= np.array(array)
+
           # define pixel integers if 256 is given (strong assumption)
         if num_bins == 256:
             cnts, bins = np.histogram(array, bins= list(range(0,256)))
